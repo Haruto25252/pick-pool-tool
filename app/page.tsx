@@ -409,7 +409,7 @@ export default function Home() {
                 }
                 <button onClick={() => openMatchup(name)} className="text-xs bg-gray-600 hover:bg-gray-500 px-1 rounded">対面</button>
                 {isInPool && (
-                  <button onClick={() => { setResultForm({ myChamp: name, enemyChamp: '', enemySearch: '' }); setShowResultForm(true) }}
+                  <button onClick={() => { setResultForm({ myChamp: name, enemyChamp: enemyChamps.length === 1 ? enemyChamps[0] : '', enemySearch: '' }); setShowResultForm(true) }}
                     className="text-xs bg-green-700 hover:bg-green-600 px-1 rounded">記録</button>
                 )}
                 </div>
@@ -570,11 +570,11 @@ export default function Home() {
             onChange={e => setResultForm({ ...resultForm, enemySearch: e.target.value })}
             className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
           <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto mb-4">
-            {allChampions.filter(n => n !== resultForm.myChamp && (resultForm.enemySearch === '' || n.includes(resultForm.enemySearch))).map(name => {
+            {(enemyChamps.length > 0 ? enemyChamps : allChampions).filter(n => n !== resultForm.myChamp && (resultForm.enemySearch === '' || n.includes(resultForm.enemySearch))).map(name => {
               const wr = matchResults[resultForm.myChamp]?.[name]
               const wrText = wr ? `${Math.round(wr.wins / wr.total * 100)}%(${wr.total})` : ''
               return (
-                <button key={name} onClick={() => { setResultForm({ myChamp: name, enemyChamp: enemyChamps.length === 1 ? enemyChamps[0] : '', enemySearch: '' }); setShowResultForm(true) }}
+                <button key={name} onClick={() => setResultForm({ ...resultForm, enemyChamp: name })}
                   className={`text-xs p-1 rounded flex flex-col items-center gap-1 border transition-all
                     ${resultForm.enemyChamp === name ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
                   {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
