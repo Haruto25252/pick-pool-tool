@@ -23,6 +23,17 @@ type Matchup = {
   unfavorable: string[]
 }
 
+type MatchResult = {
+  my_champion: string
+  enemy_champion: string
+  result: 'win' | 'lose'
+}
+
+type WinRate = {
+  wins: number
+  total: number
+}
+
 type FormType = {
   champion_name: string
   lane: string[]
@@ -49,6 +60,9 @@ export default function Home() {
   const [matchupInput, setMatchupInput] = useState({ favorable: '', unfavorable: '' })
   const [favorableSearch, setFavorableSearch] = useState('')
   const [unfavorableSearch, setUnfavorableSearch] = useState('')
+  const [matchResults, setMatchResults] = useState<Record<string, Record<string, WinRate>>>({})
+  const [showResultForm, setShowResultForm] = useState(false)
+  const [resultForm, setResultForm] = useState<{ myChamp: string, enemyChamp: string, enemySearch: string }>({ myChamp: '', enemyChamp: '', enemySearch: '' })
   const router = useRouter()
   const supabase = createClient()
 
@@ -64,15 +78,26 @@ export default function Home() {
   }, [])
 
   const fetchData = async () => {
-    const [{ data: pool }, { data: mu }] = await Promise.all([
+    const [{ data: pool }, { data: mu }, { data: results }] = await Promise.all([
       supabase.from('pick_pool').select('*').order('priority', { ascending: false }),
-      supabase.from('matchup').select('*')
+      supabase.from('matchup').select('*'),
+      supabase.from('match_result').select('*')
     ])
     if (pool) setPickPool(pool)
     if (mu) {
       const map: Record<string, Matchup> = {}
       mu.forEach((m: Matchup) => { map[m.champion_name] = m })
       setMatchups(map)
+    }
+    if (results) {
+      const map: Record<string, Record<string, WinRate>> = {}
+      results.forEach((r: MatchResult & { my_champion: string, enemy_champion: string, result: string }) => {
+        if (!map[r.my_champion]) map[r.my_champion] = {}
+        if (!map[r.my_champion][r.enemy_champion]) map[r.my_champion][r.enemy_champion] = { wins: 0, total: 0 }
+        map[r.my_champion][r.enemy_champion].total += 1
+        if (r.result === 'win') map[r.my_champion][r.enemy_champion].wins += 1
+      })
+      setMatchResults(map)
     }
   }
 
@@ -183,6 +208,17 @@ export default function Home() {
 
     fetchData()
     setSelectedChamp(null)
+  }
+
+  const saveMatchResult = async (myChamp: string, enemyChamp: string, result: 'win' | 'lose') => {
+    const { data: { user } } = await supabase.auth.getUser()
+    await supabase.from('match_result').insert({
+      my_champion: myChamp,
+      enemy_champion: enemyChamp,
+      result,
+      user_id: user!.id
+    })
+    fetchData()
   }
 
   const openMatchup = (name: string) => {
@@ -367,16 +403,16 @@ export default function Home() {
 
                 {/* ボタン */}
                 <div className="flex gap-1 mt-1">
-                  {isInPool
-                    ? <button onClick={() => openEdit(pickInfo)} className="text-xs bg-blue-700 hover:bg-blue-600 px-1 rounded">編集</button>
-                    : <button onClick={() => openAdd(name)} className="text-xs bg-yellow-600 hover:bg-yellow-500 px-1 rounded">追加</button>
-                  }
-                  <button onClick={() => openMatchup(name)} className="text-xs bg-gray-600 hover:bg-gray-500 px-1 rounded">対面</button>
-                </div>
-
+                {isInPool
+                  ? <button onClick={() => openEdit(pickInfo)} className="text-xs bg-blue-700 hover:bg-blue-600 px-1 rounded">編集</button>
+                  : <button onClick={() => openAdd(name)} className="text-xs bg-yellow-600 hover:bg-yellow-500 px-1 rounded">追加</button>
+                }
+                <button onClick={() => openMatchup(name)} className="text-xs bg-gray-600 hover:bg-gray-500 px-1 rounded">対面</button>
                 {isInPool && (
-                  <button onClick={() => removeFromPool(pickInfo.id)} className="text-xs text-red-400 hover:text-red-300">外す</button>
+                  <button onClick={() => { setResultForm({ myChamp: name, enemyChamp: '', enemySearch: '' }); setShowResultForm(true) }}
+                    className="text-xs bg-green-700 hover:bg-green-600 px-1 rounded">記録</button>
                 )}
+                </div>
               </div>
             )
           })}
@@ -522,6 +558,62 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {showResultForm && (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+        <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+          <h2 className="text-xl font-bold mb-2 text-yellow-400">試合結果を記録</h2>
+          <p className="text-gray-400 text-sm mb-4">自チャンプ: <span className="text-white font-bold">{resultForm.myChamp}</span></p>
+
+          <p className="text-sm text-gray-400 mb-2">相手チャンプを選択</p>
+          <input type="text" placeholder="検索..." value={resultForm.enemySearch}
+            onChange={e => setResultForm({ ...resultForm, enemySearch: e.target.value })}
+            className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
+          <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto mb-4">
+            {allChampions.filter(n => n !== resultForm.myChamp && (resultForm.enemySearch === '' || n.includes(resultForm.enemySearch))).map(name => {
+              const wr = matchResults[resultForm.myChamp]?.[name]
+              const wrText = wr ? `${Math.round(wr.wins / wr.total * 100)}%(${wr.total})` : ''
+              return (
+                <button key={name} onClick={() => setResultForm({ ...resultForm, enemyChamp: name })}
+                  className={`text-xs p-1 rounded flex flex-col items-center gap-1 border transition-all
+                    ${resultForm.enemyChamp === name ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
+                  {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
+                  <span className="truncate w-full text-center">{name}</span>
+                  {wrText && <span className="text-xs text-gray-400">{wrText}</span>}
+                </button>
+              )
+            })}
+          </div>
+
+          {resultForm.enemyChamp && (
+            <div className="mb-4">
+              <p className="text-sm text-gray-400 mb-2">対 <span className="text-white font-bold">{resultForm.enemyChamp}</span> の結果</p>
+              {matchResults[resultForm.myChamp]?.[resultForm.enemyChamp] && (
+                <p className="text-sm text-gray-400 mb-2">
+                  現在の勝率: <span className="text-yellow-400 font-bold">
+                    {Math.round(matchResults[resultForm.myChamp][resultForm.enemyChamp].wins / matchResults[resultForm.myChamp][resultForm.enemyChamp].total * 100)}%
+                  </span>
+                  （{matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}勝
+                  {matchResults[resultForm.myChamp][resultForm.enemyChamp].total - matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}敗）
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button onClick={() => { saveMatchResult(resultForm.myChamp, resultForm.enemyChamp, 'win'); setShowResultForm(false) }}
+                  className="flex-1 p-3 bg-blue-600 hover:bg-blue-500 font-bold rounded text-lg">
+                  勝ち 🏆
+                </button>
+                <button onClick={() => { saveMatchResult(resultForm.myChamp, resultForm.enemyChamp, 'lose'); setShowResultForm(false) }}
+                  className="flex-1 p-3 bg-red-700 hover:bg-red-600 font-bold rounded text-lg">
+                  負け 💀
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button onClick={() => setShowResultForm(false)} className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-2">キャンセル</button>
+        </div>
+      </div>
+    )}
     </div>
   )
 }
