@@ -574,7 +574,7 @@ export default function Home() {
               const wr = matchResults[resultForm.myChamp]?.[name]
               const wrText = wr ? `${Math.round(wr.wins / wr.total * 100)}%(${wr.total})` : ''
               return (
-                <button key={name} onClick={() => setResultForm({ ...resultForm, enemyChamp: name })}
+                <button key={name} onClick={() => { setResultForm({ myChamp: name, enemyChamp: enemyChamps.length === 1 ? enemyChamps[0] : '', enemySearch: '' }); setShowResultForm(true) }}
                   className={`text-xs p-1 rounded flex flex-col items-center gap-1 border transition-all
                     ${resultForm.enemyChamp === name ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
                   {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
