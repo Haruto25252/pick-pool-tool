@@ -491,6 +491,12 @@ export default function Home() {
               <button onClick={saveChampion} className="flex-1 p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
                 {editingChamp ? '保存' : '追加'}
               </button>
+              {editingChamp && (
+                <button onClick={() => { removeFromPool(editingChamp.id); setShowForm(false) }}
+                  className="flex-1 p-2 bg-red-700 text-white font-bold rounded hover:bg-red-600">
+                  ピックプールから削除
+                </button>
+              )}
               <button onClick={() => setShowForm(false)} className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
             </div>
           </div>
