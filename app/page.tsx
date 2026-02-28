@@ -409,7 +409,25 @@ export default function Home() {
   const sorted = [...filtered].sort((a, b) => {
     const sa = getCounterScore(a)
     const sb = getCounterScore(b)
-    if (sb !== sa) return sb - sa
+    
+    // スキルマッチアップ判定（有利かつ不利に両方入っている）
+    const favorable = enemyChamps.length > 0
+    const aFav = enemyChamps.some(e => matchups[a]?.favorable.includes(e))
+    const aUnfav = enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
+    const bFav = enemyChamps.some(e => matchups[b]?.favorable.includes(e))
+    const bUnfav = enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
+    const aSkill = aFav && aUnfav
+    const bSkill = bFav && bUnfav
+
+    if (favorable) {
+      // 有利(score>0) > スキル(score=0かつ両方) > 未設定(score=0) > 不利(score<0)
+      const aGroup = sa > 0 ? 0 : aSkill ? 1 : sa === 0 ? 2 : 3
+      const bGroup = sb > 0 ? 0 : bSkill ? 1 : sb === 0 ? 2 : 3
+      if (aGroup !== bGroup) return aGroup - bGroup
+    } else {
+      if (sb !== sa) return sb - sa
+    }
+
     const pa = getPickInfo(a)?.priority ?? 0
     const pb = getPickInfo(b)?.priority ?? 0
     return pb - pa
@@ -516,6 +534,8 @@ export default function Home() {
             const score = getCounterScore(name)
             const isCounter = score > 0
             const isDisadvantage = score < 0
+            const isSkillMatchup = enemyChamps.some(e => matchups[name]?.favorable.includes(e)) &&
+                       enemyChamps.some(e => matchups[name]?.unfavorable.includes(e))
             const champTags = getChampionTags(name)
             const champLanes = getChampionLanes(name)
 
@@ -524,6 +544,7 @@ export default function Home() {
                 className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all
                   ${isBanned ? 'opacity-40 border-red-700 bg-red-950'
                     : enemyChamps.includes(name) ? 'opacity-40 border-orange-500 bg-orange-950'
+                    : isSkillMatchup ? 'bg-yellow-950 border-yellow-400'
                     : isCounter ? 'bg-green-950 border-green-400'
                     : isDisadvantage ? 'bg-red-950 border-red-800'
                     : isInPool ? `bg-gray-800 ${priorityBorder(pickInfo!.priority)}`
@@ -692,18 +713,18 @@ export default function Home() {
             {/* 一括設定モードボタン */}
             <div className="flex gap-2 mb-4">
               <span className="text-sm text-gray-400 self-center">一括設定:</span>
-                {(['favorable', 'unfavorable', 'skill', 'none'] as const).map(type => (
-                  <button key={type} onClick={() => setBulkMatchupMode(prev => prev === type ? null : type)}
-                    className={`px-3 py-1 rounded text-sm font-bold border-2 transition-all
-                      ${bulkMatchupMode === type
-                        ? type === 'favorable' ? 'bg-green-700 border-green-400 text-white'
-                          : type === 'unfavorable' ? 'bg-red-700 border-red-400 text-white'
-                          : type === 'skill' ? 'bg-yellow-600 border-yellow-400 text-white'
-                          : 'bg-gray-600 border-gray-400 text-white'
-                        : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}>
-                    {type === 'favorable' ? '▲ 有利' : type === 'unfavorable' ? '▼ 不利' : type === 'skill' ? '● スキル' : '✕ 解除'}
-                  </button>
-                ))}
+              {(['favorable', 'unfavorable', 'skill', 'none'] as const).map(type => (
+                <button key={type} onClick={() => setBulkMatchupMode(prev => prev === type ? null : type)}
+                  className={`px-3 py-1 rounded text-sm font-bold border-2 transition-all
+                    ${bulkMatchupMode === type
+                      ? type === 'favorable' ? 'bg-green-700 border-green-400 text-white'
+                        : type === 'unfavorable' ? 'bg-red-700 border-red-400 text-white'
+                        : type === 'skill' ? 'bg-yellow-600 border-yellow-400 text-white'
+                        : 'bg-gray-600 border-gray-400 text-white'
+                      : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}>
+                  {type === 'favorable' ? '▲ 有利' : type === 'unfavorable' ? '▼ 不利' : type === 'skill' ? '● スキル' : '✕ 解除'}
+                </button>
+              ))}
               {bulkMatchupMode && <span className="text-xs text-gray-400 self-center">クリックで一括設定中</span>}
             </div>
 
