@@ -85,6 +85,8 @@ export default function Home() {
   const [bulkLaneChamps, setBulkLaneChamps] = useState<Record<string, string[]>>({})
   const [bulkSearch, setBulkSearch] = useState('')
   const [selectedLaneForBulk, setSelectedLaneForBulk] = useState<string | null>(null)
+  const [selectedMatchupChamp, setSelectedMatchupChamp] = useState<string | null>(null)
+  const [bulkMatchupMode, setBulkMatchupMode] = useState<'favorable' | 'unfavorable' | 'skill' | 'none' | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -274,6 +276,38 @@ export default function Home() {
     setSelectedChamp(name)
     const mu = matchups[name]
     setMatchupInput({ favorable: mu?.favorable?.join(', ') || '', unfavorable: mu?.unfavorable?.join(', ') || '' })
+  }
+
+  const handleMatchupChampClick = (name: string) => {
+    if (bulkMatchupMode) {
+      setMatchupType(name, bulkMatchupMode)
+    } else {
+      setSelectedMatchupChamp(prev => prev === name ? null : name)
+    }
+  }
+
+  const setMatchupType = (name: string, type: 'favorable' | 'unfavorable' | 'skill' | 'none') => {
+    const favorable = matchupInput.favorable.split(',').map(s => s.trim()).filter(Boolean)
+    const unfavorable = matchupInput.unfavorable.split(',').map(s => s.trim()).filter(Boolean)
+    let newFavorable = [...favorable]
+    let newUnfavorable = [...unfavorable]
+
+    if (type === 'favorable') {
+      if (!newFavorable.includes(name)) newFavorable.push(name)
+      newUnfavorable = newUnfavorable.filter(n => n !== name)
+    } else if (type === 'unfavorable') {
+      if (!newUnfavorable.includes(name)) newUnfavorable.push(name)
+      newFavorable = newFavorable.filter(n => n !== name)
+    } else if (type === 'skill') {
+      if (!newFavorable.includes(name)) newFavorable.push(name)
+      if (!newUnfavorable.includes(name)) newUnfavorable.push(name)
+    } else {
+      newFavorable = newFavorable.filter(n => n !== name)
+      newUnfavorable = newUnfavorable.filter(n => n !== name)
+    }
+
+    setMatchupInput({ favorable: newFavorable.join(', '), unfavorable: newUnfavorable.join(', ') })
+    setSelectedMatchupChamp(null)
   }
 
   const addTag = async () => {
@@ -649,62 +683,85 @@ export default function Home() {
         </div>
       )}
 
-      {/* 対面設定フォーム */}
+     {/* 対面設定フォーム */}
       {selectedChamp && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl max-h-screen overflow-y-auto">
             <h2 className="text-xl font-bold mb-4 text-yellow-400">{selectedChamp} の対面設定</h2>
-            <p className="text-sm text-green-400 font-bold mb-2">▲ 有利な相手</p>
+
+            {/* 一括設定モードボタン */}
+            <div className="flex gap-2 mb-4">
+              <span className="text-sm text-gray-400 self-center">一括設定:</span>
+                {(['favorable', 'unfavorable', 'skill', 'none'] as const).map(type => (
+                  <button key={type} onClick={() => setBulkMatchupMode(prev => prev === type ? null : type)}
+                    className={`px-3 py-1 rounded text-sm font-bold border-2 transition-all
+                      ${bulkMatchupMode === type
+                        ? type === 'favorable' ? 'bg-green-700 border-green-400 text-white'
+                          : type === 'unfavorable' ? 'bg-red-700 border-red-400 text-white'
+                          : type === 'skill' ? 'bg-yellow-600 border-yellow-400 text-white'
+                          : 'bg-gray-600 border-gray-400 text-white'
+                        : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}>
+                    {type === 'favorable' ? '▲ 有利' : type === 'unfavorable' ? '▼ 不利' : type === 'skill' ? '● スキル' : '✕ 解除'}
+                  </button>
+                ))}
+              {bulkMatchupMode && <span className="text-xs text-gray-400 self-center">クリックで一括設定中</span>}
+            </div>
+
+            {/* 検索 */}
             <input type="text" placeholder="検索..." value={favorableSearch}
               onChange={e => setFavorableSearch(e.target.value)}
-              className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-green-400" />
-            <div className="grid grid-cols-4 gap-2 mb-3 max-h-40 overflow-y-auto">
+              className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
+
+            {/* チャンピオン一覧 */}
+            <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto mb-4">
               {allChampions.filter(n => n !== selectedChamp && (favorableSearch === '' || n.includes(favorableSearch))).map(name => {
-                const isBanned = bannedChamps.has(name)
-                const isSelected = matchupInput.favorable.split(',').map(s => s.trim()).includes(name)
+                const favorable = matchupInput.favorable.split(',').map(s => s.trim()).filter(Boolean)
+                const unfavorable = matchupInput.unfavorable.split(',').map(s => s.trim()).filter(Boolean)
+                const isFavorable = favorable.includes(name)
+                const isUnfavorable = unfavorable.includes(name)
+                const isSkill = isFavorable && isUnfavorable
+                const isSelected = selectedMatchupChamp === name
+
+                const borderColor = isSkill ? 'border-yellow-400 bg-yellow-950'
+                  : isFavorable ? 'border-green-400 bg-green-950'
+                  : isUnfavorable ? 'border-red-400 bg-red-950'
+                  : isSelected ? 'border-white bg-gray-600'
+                  : 'border-gray-600 bg-gray-700 hover:border-gray-400'
+
                 return (
-                  <button key={name} onClick={() => {
-                    const current = matchupInput.favorable.split(',').map(s => s.trim()).filter(Boolean)
-                    const next = isSelected ? current.filter(n => n !== name) : [...current, name]
-                    setMatchupInput({ ...matchupInput, favorable: next.join(', ') })
-                  }}
-                    className={`text-xs p-1 rounded flex items-center gap-1 border transition-all
-                      ${isBanned ? 'opacity-30 border-gray-700 bg-gray-700'
-                        : isSelected ? 'border-green-400 bg-green-900'
-                        : 'border-gray-600 bg-gray-700 hover:border-green-400'}`}>
-                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                    <span className="truncate">{name}</span>
+                  <button key={name} onClick={() => handleMatchupChampClick(name)}
+                    className={`text-xs p-1 rounded flex flex-col items-center gap-1 border-2 transition-all ${borderColor}`}>
+                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-8 h-8 rounded-full" />}
+                    <span className="truncate w-full text-center leading-tight">
+                      {isSkill ? '● ' : isFavorable ? '▲ ' : isUnfavorable ? '▼ ' : ''}{name}
+                    </span>
                   </button>
                 )
               })}
             </div>
-            <p className="text-sm text-red-400 font-bold mb-2">▼ 不利な相手</p>
-            <input type="text" placeholder="検索..." value={unfavorableSearch}
-              onChange={e => setUnfavorableSearch(e.target.value)}
-              className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
-            <div className="grid grid-cols-4 gap-2 mb-4 max-h-40 overflow-y-auto">
-              {allChampions.filter(n => n !== selectedChamp && (unfavorableSearch === '' || n.includes(unfavorableSearch))).map(name => {
-                const isBanned = bannedChamps.has(name)
-                const isSelected = matchupInput.unfavorable.split(',').map(s => s.trim()).includes(name)
-                return (
-                  <button key={name} onClick={() => {
-                    const current = matchupInput.unfavorable.split(',').map(s => s.trim()).filter(Boolean)
-                    const next = isSelected ? current.filter(n => n !== name) : [...current, name]
-                    setMatchupInput({ ...matchupInput, unfavorable: next.join(', ') })
-                  }}
-                    className={`text-xs p-1 rounded flex items-center gap-1 border transition-all
-                      ${isBanned ? 'opacity-30 border-gray-700 bg-gray-700'
-                        : isSelected ? 'border-red-400 bg-red-900'
-                        : 'border-gray-600 bg-gray-700 hover:border-red-400'}`}>
-                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                    <span className="truncate">{name}</span>
-                  </button>
-                )
-              })}
-            </div>
+
+            {/* 選択中チャンプへの設定ボタン */}
+            {selectedMatchupChamp && (
+              <div className="bg-gray-700 rounded p-3 mb-4">
+                <p className="text-sm text-gray-300 mb-2"><span className="text-white font-bold">{selectedMatchupChamp}</span> を設定:</p>
+                <div className="flex gap-2">
+                  {(['favorable', 'unfavorable', 'skill', 'none'] as const).map(type => (
+                    <button key={type} onClick={() => setMatchupType(selectedMatchupChamp, type)}
+                      className={`flex-1 py-2 rounded font-bold text-sm border-2 transition-all
+                        ${type === 'favorable' ? 'bg-green-800 border-green-400 hover:bg-green-700'
+                          : type === 'unfavorable' ? 'bg-red-800 border-red-400 hover:bg-red-700'
+                          : type === 'skill' ? 'bg-yellow-800 border-yellow-400 hover:bg-yellow-700'
+                          : 'bg-gray-600 border-gray-500 hover:bg-gray-500'}`}>
+                      {type === 'favorable' ? '▲ 有利' : type === 'unfavorable' ? '▼ 不利' : type === 'skill' ? '● スキル' : '✕ 解除'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-3">
               <button onClick={() => saveMatchup(selectedChamp)} className="flex-1 p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">保存</button>
-              <button onClick={() => { setSelectedChamp(null); setFavorableSearch(''); setUnfavorableSearch('') }}
+              <button onClick={() => { setSelectedChamp(null); setFavorableSearch(''); setSelectedMatchupChamp(null); setBulkMatchupMode(null) }}
                 className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
             </div>
           </div>
