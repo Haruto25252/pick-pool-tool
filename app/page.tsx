@@ -6,14 +6,12 @@ import { useRouter } from 'next/navigation'
 import { getChampionIcon, championMap } from '@/lib/champions'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
-const CLASSES = ['全て', 'タンク', 'ブルーザー', 'マジシャン', 'アサシン', 'マークスマン', 'サポート']
-const TAGS = ['エンゲージ', 'エンチャンター', 'メイジ', 'ダイブ', 'ピール', 'スプリット', 'スケーリング', 'アーリーゲーム']
+const TAGS = ['タンク', 'ブルーザー', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'エンチャンター', 'メイジ', 'ダイブ', 'ピール', 'スプリット', 'スケーリング', 'アーリーゲーム']
 
 type PickPool = {
   id: string
   champion_name: string
   lane: string[]
-  class: string
   priority: number
   note: string
   tags: string[]
@@ -50,7 +48,6 @@ type UserTag = {
 type FormType = {
   champion_name: string
   lane: string[]
-  class: string
   priority: number
   note: string
   tags: string[]
@@ -61,7 +58,6 @@ export default function Home() {
   const [championConfigs, setChampionConfigs] = useState<Record<string, ChampionConfig>>({})
   const [matchups, setMatchups] = useState<Record<string, Matchup>>({})
   const [lane, setLane] = useState('全て')
-  const [cls, setCls] = useState('全て')
   const [search, setSearch] = useState('')
   const [bannedChamps, setBannedChamps] = useState<Set<string>>(new Set())
   const [enemyChamps, setEnemyChamps] = useState<string[]>([])
@@ -71,7 +67,7 @@ export default function Home() {
   const [showForm, setShowForm] = useState(false)
   const [editingChamp, setEditingChamp] = useState<PickPool | null>(null)
   const [selectedChamp, setSelectedChamp] = useState<string | null>(null)
-  const [form, setForm] = useState<FormType>({ champion_name: '', lane: ['TOP'], class: 'タンク', priority: 3, note: '', tags: [] })
+  const [form, setForm] = useState<FormType>({ champion_name: '', lane: ['TOP'], priority: 3, note: '', tags: [] })
   const [matchupInput, setMatchupInput] = useState({ favorable: '', unfavorable: '' })
   const [favorableSearch, setFavorableSearch] = useState('')
   const [unfavorableSearch, setUnfavorableSearch] = useState('')
@@ -202,22 +198,22 @@ export default function Home() {
   const openAdd = (name: string) => {
     setEditingChamp(null)
     const config = championConfigs[name]
-    setForm({ champion_name: name, lane: config?.lanes?.length ? config.lanes : ['TOP'], class: 'タンク', priority: 3, note: '', tags: config?.tags || [] })
+    setForm({ champion_name: name, lane: config?.lanes?.length ? config.lanes : ['TOP'], priority: 3, note: '', tags: config?.tags || [] })
     setShowForm(true)
   }
 
   const openEdit = (p: PickPool) => {
     setEditingChamp(p)
-    setForm({ champion_name: p.champion_name, lane: p.lane, class: p.class, priority: p.priority, note: p.note || '', tags: getChampionTags(p.champion_name) })
+    setForm({ champion_name: p.champion_name, lane: p.lane, priority: p.priority, note: p.note || '', tags: getChampionTags(p.champion_name) })
     setShowForm(true)
   }
 
   const saveChampion = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (editingChamp) {
-      await supabase.from('pick_pool').update({ lane: form.lane, class: form.class, priority: form.priority, note: form.note }).eq('id', editingChamp.id)
+      await supabase.from('pick_pool').update({ lane: form.lane, priority: form.priority, note: form.note }).eq('id', editingChamp.id)
     } else {
-      await supabase.from('pick_pool').insert({ champion_name: form.champion_name, lane: form.lane, class: form.class, priority: form.priority, note: form.note, user_id: user!.id })
+      await supabase.from('pick_pool').insert({ champion_name: form.champion_name, lane: form.lane, priority: form.priority, note: form.note, user_id: user!.id })
     }
     await saveChampionConfig(form.champion_name, { lanes: form.lane, tags: form.tags })
     setShowForm(false)
@@ -365,9 +361,6 @@ export default function Home() {
     if (lane !== '全て') {
       if (lanes.length > 0 && !lanes.includes(lane)) return false
     }
-    if (cls !== '全て') {
-      if (info && info.class !== cls) return false
-    }
     if (selectedTag !== '全て') {
       if (!getChampionTags(name).includes(selectedTag)) return false
     }
@@ -456,14 +449,6 @@ export default function Home() {
               <button key={l} onClick={() => setLane(l)}
                 className={`px-3 py-1 rounded font-bold text-sm ${lane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
                 {l}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2 flex-wrap mb-2">
-            {CLASSES.map(c => (
-              <button key={c} onClick={() => setCls(c)}
-                className={`px-3 py-1 rounded font-bold text-sm ${cls === c ? 'bg-blue-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                {c}
               </button>
             ))}
           </div>
@@ -618,10 +603,6 @@ export default function Home() {
                 ))}
               </div>
             </div>
-            <select value={form.class} onChange={e => setForm({ ...form, class: e.target.value })}
-              className="w-full p-2 mb-3 rounded bg-gray-700">
-              {CLASSES.filter(c => c !== '全て').map(c => <option key={c}>{c}</option>)}
-            </select>
             <div className="mb-3">
               <p className="text-sm text-gray-400 mb-1">優先度: {form.priority}</p>
               <input type="range" min="1" max="5" value={form.priority}
