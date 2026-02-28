@@ -87,6 +87,8 @@ export default function Home() {
   const [selectedLaneForBulk, setSelectedLaneForBulk] = useState<string | null>(null)
   const [selectedMatchupChamp, setSelectedMatchupChamp] = useState<string | null>(null)
   const [bulkMatchupMode, setBulkMatchupMode] = useState<'favorable' | 'unfavorable' | 'skill' | 'none' | null>(null)
+  const [enemyLane, setEnemyLane] = useState('全て')
+  const [enemyTag, setEnemyTag] = useState('全て')
   const router = useRouter()
   const supabase = createClient()
 
@@ -236,32 +238,51 @@ export default function Home() {
     const { data: { user } } = await supabase.auth.getUser()
     const favorable = matchupInput.favorable.split(',').map(s => s.trim()).filter(Boolean)
     const unfavorable = matchupInput.unfavorable.split(',').map(s => s.trim()).filter(Boolean)
+    const skill = favorable.filter(n => unfavorable.includes(n))
+
     const existing = matchups[champName]
     if (existing) {
       await supabase.from('matchup').update({ favorable, unfavorable }).eq('champion_name', champName).eq('user_id', user!.id)
     } else {
       await supabase.from('matchup').insert({ champion_name: champName, favorable, unfavorable, user_id: user!.id })
     }
-    for (const enemy of favorable) {
+
+    // 有利のみ（スキル以外）→相手に不利を設定
+    for (const enemy of favorable.filter(n => !skill.includes(n))) {
       const enemyMu = matchups[enemy]
       if (enemyMu) {
-        const newUnfavorable = Array.from(new Set([...enemyMu.unfavorable, champName]))
+        const newUnfavorable = Array.from(new Set([...enemyMu.unfavorable.filter(n => n !== champName), champName]))
         const newFavorable = enemyMu.favorable.filter(n => n !== champName)
         await supabase.from('matchup').update({ favorable: newFavorable, unfavorable: newUnfavorable }).eq('champion_name', enemy).eq('user_id', user!.id)
       } else {
         await supabase.from('matchup').insert({ champion_name: enemy, favorable: [], unfavorable: [champName], user_id: user!.id })
       }
     }
-    for (const enemy of unfavorable) {
+
+    // 不利のみ（スキル以外）→相手に有利を設定
+    for (const enemy of unfavorable.filter(n => !skill.includes(n))) {
       const enemyMu = matchups[enemy]
       if (enemyMu) {
-        const newFavorable = Array.from(new Set([...enemyMu.favorable, champName]))
+        const newFavorable = Array.from(new Set([...enemyMu.favorable.filter(n => n !== champName), champName]))
         const newUnfavorable = enemyMu.unfavorable.filter(n => n !== champName)
         await supabase.from('matchup').update({ favorable: newFavorable, unfavorable: newUnfavorable }).eq('champion_name', enemy).eq('user_id', user!.id)
       } else {
         await supabase.from('matchup').insert({ champion_name: enemy, favorable: [champName], unfavorable: [], user_id: user!.id })
       }
     }
+
+    // スキルマッチアップ→相手にも両方設定
+    for (const enemy of skill) {
+      const enemyMu = matchups[enemy]
+      if (enemyMu) {
+        const newFavorable = Array.from(new Set([...enemyMu.favorable, champName]))
+        const newUnfavorable = Array.from(new Set([...enemyMu.unfavorable, champName]))
+        await supabase.from('matchup').update({ favorable: newFavorable, unfavorable: newUnfavorable }).eq('champion_name', enemy).eq('user_id', user!.id)
+      } else {
+        await supabase.from('matchup').insert({ champion_name: enemy, favorable: [champName], unfavorable: [champName], user_id: user!.id })
+      }
+    }
+
     fetchData()
     setSelectedChamp(null)
   }
@@ -616,8 +637,38 @@ export default function Home() {
             <input type="text" placeholder="検索..." value={enemySearch}
               onChange={e => setEnemySearch(e.target.value)}
               className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
-            <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto mb-4">
-              {allChampions.filter(n => enemySearch === '' || n.includes(enemySearch)).map(name => {
+            <div className="flex gap-2 flex-wrap mb-2">
+              {LANES.map(l => (
+                <button key={l} onClick={() => setEnemyLane(l)}
+                  className={`px-2 py-1 rounded text-xs font-bold ${enemyLane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2 flex-wrap mb-3">
+              <button onClick={() => setEnemyTag('全て')}
+                className={`px-2 py-1 rounded text-xs font-bold ${enemyTag === '全て' ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                全て
+              </button>
+              {allTags.map(tag => (
+                <button key={tag} onClick={() => setEnemyTag(tag)}
+                  className={`px-2 py-1 rounded text-xs font-bold ${enemyTag === tag ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+            <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto mb-4">
+              {allChampions.filter(n => {
+                if (enemySearch !== '' && !n.includes(enemySearch)) return false
+                if (enemyLane !== '全て') {
+                  const lanes = getChampionLanes(n)
+                  if (lanes.length > 0 && !lanes.includes(enemyLane)) return false
+                }
+                if (enemyTag !== '全て') {
+                  if (!getChampionTags(n).includes(enemyTag)) return false
+                }
+                return true
+              }).map(name => {
                 const isSelected = enemyChamps.includes(name)
                 const isBanned = bannedChamps.has(name)
                 return (
@@ -632,7 +683,7 @@ export default function Home() {
                 )
               })}
             </div>
-            <button onClick={() => { setShowEnemyPicker(false); setEnemySearch('') }}
+            <button onClick={() => { setShowEnemyPicker(false); setEnemySearch(''); setEnemyLane('全て'); setEnemyTag('全て') }}
               className="w-full p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
               完了
             </button>
