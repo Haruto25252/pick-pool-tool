@@ -7,6 +7,7 @@ import { getChampionIcon, championMap } from '@/lib/champions'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
 const CLASSES = ['全て', 'タンク', 'ブルーザー', 'マジシャン', 'アサシン', 'マークスマン', 'サポート']
+const TAGS = ['エンゲージ', 'エンチャンター', 'メイジ', 'ダイブ', 'ピール', 'スプリット', 'スケーリング', 'アーリーゲーム']
 
 type PickPool = {
   id: string
@@ -15,6 +16,13 @@ type PickPool = {
   class: string
   priority: number
   note: string
+  tags: string[]
+}
+
+type ChampionConfig = {
+  champion_name: string
+  lanes: string[]
+  tags: string[]
 }
 
 type Matchup = {
@@ -34,16 +42,23 @@ type WinRate = {
   total: number
 }
 
+type UserTag = {
+  id: string
+  name: string
+}
+
 type FormType = {
   champion_name: string
   lane: string[]
   class: string
   priority: number
   note: string
+  tags: string[]
 }
 
 export default function Home() {
   const [pickPool, setPickPool] = useState<PickPool[]>([])
+  const [championConfigs, setChampionConfigs] = useState<Record<string, ChampionConfig>>({})
   const [matchups, setMatchups] = useState<Record<string, Matchup>>({})
   const [lane, setLane] = useState('全て')
   const [cls, setCls] = useState('全て')
@@ -56,13 +71,24 @@ export default function Home() {
   const [showForm, setShowForm] = useState(false)
   const [editingChamp, setEditingChamp] = useState<PickPool | null>(null)
   const [selectedChamp, setSelectedChamp] = useState<string | null>(null)
-  const [form, setForm] = useState<FormType>({ champion_name: '', lane: ['TOP'], class: 'タンク', priority: 3, note: '' })
+  const [form, setForm] = useState<FormType>({ champion_name: '', lane: ['TOP'], class: 'タンク', priority: 3, note: '', tags: [] })
   const [matchupInput, setMatchupInput] = useState({ favorable: '', unfavorable: '' })
   const [favorableSearch, setFavorableSearch] = useState('')
   const [unfavorableSearch, setUnfavorableSearch] = useState('')
   const [matchResults, setMatchResults] = useState<Record<string, Record<string, WinRate>>>({})
   const [showResultForm, setShowResultForm] = useState(false)
   const [resultForm, setResultForm] = useState<{ myChamp: string, enemyChamp: string, enemySearch: string }>({ myChamp: '', enemyChamp: '', enemySearch: '' })
+  const [currentPatch, setCurrentPatch] = useState<string>('')
+  const [selectedTag, setSelectedTag] = useState('全て')
+  const [userTags, setUserTags] = useState<UserTag[]>([])
+  const [showTagManager, setShowTagManager] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+  const [selectedTagForBulk, setSelectedTagForBulk] = useState<string | null>(null)
+  const [bulkMode, setBulkMode] = useState<'tag' | 'lane' | null>(null)
+  const [bulkTagChamps, setBulkTagChamps] = useState<string[]>([])
+  const [bulkLaneChamps, setBulkLaneChamps] = useState<Record<string, string[]>>({})
+  const [bulkSearch, setBulkSearch] = useState('')
+  const [selectedLaneForBulk, setSelectedLaneForBulk] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -72,20 +98,28 @@ export default function Home() {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
+      fetch('https://ddragon.leagueoflegends.com/api/versions.json')
+        .then(res => res.json())
+        .then(versions => setCurrentPatch(versions[0]))
       fetchData()
     }
     getUser()
   }, [])
 
   const fetchData = async () => {
-    const [{ data: pool }, { data: mu }, { data: results }] = await Promise.all([
+    const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }] = await Promise.all([
       supabase.from('pick_pool').select('*').order('priority', { ascending: false }),
       supabase.from('matchup').select('*'),
-      supabase.from('match_result').select('*')
+      supabase.from('match_result').select('*'),
+      supabase.from('default_matchup').select('*'),
+      supabase.from('user_tags').select('*').order('created_at'),
+      supabase.from('champion_config').select('*')
     ])
     if (pool) setPickPool(pool)
     if (mu) {
-      const map: Record<string, Matchup> = {}
+      const defaultMap: Record<string, Matchup> = {}
+      if (defaultMu) defaultMu.forEach((m: Matchup) => { defaultMap[m.champion_name] = m })
+      const map: Record<string, Matchup> = { ...defaultMap }
       mu.forEach((m: Matchup) => { map[m.champion_name] = m })
       setMatchups(map)
     }
@@ -98,6 +132,32 @@ export default function Home() {
         if (r.result === 'win') map[r.my_champion][r.enemy_champion].wins += 1
       })
       setMatchResults(map)
+    }
+    if (userTagsData) setUserTags(userTagsData)
+    if (configs) {
+      const map: Record<string, ChampionConfig> = {}
+      configs.forEach((c: ChampionConfig) => { map[c.champion_name] = c })
+      setChampionConfigs(map)
+    }
+  }
+
+  const getChampionTags = (name: string): string[] => {
+    return championConfigs[name]?.tags || []
+  }
+
+  const getChampionLanes = (name: string): string[] => {
+    const poolInfo = getPickInfo(name)
+    if (poolInfo) return poolInfo.lane
+    return championConfigs[name]?.lanes || []
+  }
+
+  const saveChampionConfig = async (name: string, updates: Partial<ChampionConfig>) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    const existing = championConfigs[name]
+    if (existing) {
+      await supabase.from('champion_config').update(updates).eq('champion_name', name).eq('user_id', user!.id)
+    } else {
+      await supabase.from('champion_config').insert({ champion_name: name, lanes: [], tags: [], ...updates, user_id: user!.id })
     }
   }
 
@@ -117,7 +177,6 @@ export default function Home() {
 
   const getPickInfo = (name: string) => pickPool.find(p => p.champion_name === name)
 
-  // カウンタースコア計算
   const getCounterScore = (name: string): number => {
     if (enemyChamps.length === 0) return 0
     const mu = matchups[name]
@@ -133,7 +192,6 @@ export default function Home() {
   const isDangerous = (name: string): boolean => {
     if (viewMode !== 'all') return false
     if (pickPool.length === 0) return false
-    // 自分のピックプールの中にこのチャンプに有利なチャンプが一人でもいればOK
     const hasCounter = pickPool.some(p => {
       const mu = matchups[p.champion_name]
       return mu?.favorable.includes(name)
@@ -143,23 +201,25 @@ export default function Home() {
 
   const openAdd = (name: string) => {
     setEditingChamp(null)
-    setForm({ champion_name: name, lane: ['TOP'], class: 'タンク', priority: 3, note: '' })
+    const config = championConfigs[name]
+    setForm({ champion_name: name, lane: config?.lanes?.length ? config.lanes : ['TOP'], class: 'タンク', priority: 3, note: '', tags: config?.tags || [] })
     setShowForm(true)
   }
 
   const openEdit = (p: PickPool) => {
     setEditingChamp(p)
-    setForm({ champion_name: p.champion_name, lane: p.lane, class: p.class, priority: p.priority, note: p.note || '' })
+    setForm({ champion_name: p.champion_name, lane: p.lane, class: p.class, priority: p.priority, note: p.note || '', tags: getChampionTags(p.champion_name) })
     setShowForm(true)
   }
 
   const saveChampion = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
     if (editingChamp) {
-      await supabase.from('pick_pool').update(form).eq('id', editingChamp.id)
+      await supabase.from('pick_pool').update({ lane: form.lane, class: form.class, priority: form.priority, note: form.note }).eq('id', editingChamp.id)
     } else {
-      const { data: { user } } = await supabase.auth.getUser()
-      await supabase.from('pick_pool').insert({ ...form, user_id: user!.id })
+      await supabase.from('pick_pool').insert({ champion_name: form.champion_name, lane: form.lane, class: form.class, priority: form.priority, note: form.note, user_id: user!.id })
     }
+    await saveChampionConfig(form.champion_name, { lanes: form.lane, tags: form.tags })
     setShowForm(false)
     fetchData()
   }
@@ -173,16 +233,12 @@ export default function Home() {
     const { data: { user } } = await supabase.auth.getUser()
     const favorable = matchupInput.favorable.split(',').map(s => s.trim()).filter(Boolean)
     const unfavorable = matchupInput.unfavorable.split(',').map(s => s.trim()).filter(Boolean)
-
-    // 自分のマッチアップを保存
     const existing = matchups[champName]
     if (existing) {
       await supabase.from('matchup').update({ favorable, unfavorable }).eq('champion_name', champName).eq('user_id', user!.id)
     } else {
       await supabase.from('matchup').insert({ champion_name: champName, favorable, unfavorable, user_id: user!.id })
     }
-
-    // 有利対面の相手側に「不利」として自動反映
     for (const enemy of favorable) {
       const enemyMu = matchups[enemy]
       if (enemyMu) {
@@ -193,8 +249,6 @@ export default function Home() {
         await supabase.from('matchup').insert({ champion_name: enemy, favorable: [], unfavorable: [champName], user_id: user!.id })
       }
     }
-
-    // 不利対面の相手側に「有利」として自動反映
     for (const enemy of unfavorable) {
       const enemyMu = matchups[enemy]
       if (enemyMu) {
@@ -205,29 +259,91 @@ export default function Home() {
         await supabase.from('matchup').insert({ champion_name: enemy, favorable: [champName], unfavorable: [], user_id: user!.id })
       }
     }
-
     fetchData()
     setSelectedChamp(null)
   }
 
   const saveMatchResult = async (myChamp: string, enemyChamp: string, result: 'win' | 'lose') => {
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('match_result').insert({
-      my_champion: myChamp,
-      enemy_champion: enemyChamp,
-      result,
-      user_id: user!.id
-    })
+    await supabase.from('match_result').insert({ my_champion: myChamp, enemy_champion: enemyChamp, result, user_id: user!.id })
     fetchData()
   }
 
   const openMatchup = (name: string) => {
     setSelectedChamp(name)
     const mu = matchups[name]
-    setMatchupInput({
-      favorable: mu?.favorable?.join(', ') || '',
-      unfavorable: mu?.unfavorable?.join(', ') || ''
+    setMatchupInput({ favorable: mu?.favorable?.join(', ') || '', unfavorable: mu?.unfavorable?.join(', ') || '' })
+  }
+
+  const addTag = async () => {
+    if (!newTagName.trim()) return
+    const { data: { user } } = await supabase.auth.getUser()
+    await supabase.from('user_tags').insert({ name: newTagName.trim(), user_id: user!.id })
+    setNewTagName('')
+    fetchData()
+  }
+
+  const deleteTag = async (id: string, tagName: string) => {
+    await supabase.from('user_tags').delete().eq('id', id)
+    const champsWithTag = Object.values(championConfigs).filter(c => c.tags?.includes(tagName))
+    for (const champ of champsWithTag) {
+      await saveChampionConfig(champ.champion_name, { tags: champ.tags.filter(t => t !== tagName) })
+    }
+    fetchData()
+  }
+
+  const openBulkTag = (tagName: string) => {
+    setSelectedTagForBulk(tagName)
+    setBulkMode('tag')
+    const champsWithTag = allChampions.filter(name => getChampionTags(name).includes(tagName))
+    setBulkTagChamps(champsWithTag)
+    setBulkSearch('')
+  }
+
+  const openBulkLane = (laneName: string) => {
+    setSelectedLaneForBulk(laneName)
+    setBulkMode('lane')
+    const map: Record<string, string[]> = {}
+    allChampions.forEach(name => {
+      map[name] = getChampionLanes(name)
     })
+    setBulkLaneChamps(map)
+    setBulkSearch('')
+  }
+
+  const saveBulkTag = async () => {
+    if (!selectedTagForBulk) return
+    for (const name of allChampions) {
+      const currentTags = getChampionTags(name)
+      const hasTag = currentTags.includes(selectedTagForBulk)
+      const shouldHave = bulkTagChamps.includes(name)
+      if (hasTag && !shouldHave) {
+        await saveChampionConfig(name, { tags: currentTags.filter(t => t !== selectedTagForBulk) })
+      } else if (!hasTag && shouldHave) {
+        await saveChampionConfig(name, { tags: [...currentTags, selectedTagForBulk] })
+      }
+    }
+    setSelectedTagForBulk(null)
+    setBulkMode(null)
+    fetchData()
+  }
+
+  const saveBulkLane = async () => {
+    if (!selectedLaneForBulk) return
+    for (const name of allChampions) {
+      const currentLanes = getChampionLanes(name)
+      const newLanes = bulkLaneChamps[name] || currentLanes
+      if (JSON.stringify(currentLanes.sort()) !== JSON.stringify(newLanes.sort())) {
+        const poolInfo = getPickInfo(name)
+        if (poolInfo) {
+          await supabase.from('pick_pool').update({ lane: newLanes }).eq('id', poolInfo.id)
+        }
+        await saveChampionConfig(name, { lanes: newLanes })
+      }
+    }
+    setSelectedLaneForBulk(null)
+    setBulkMode(null)
+    fetchData()
   }
 
   const priorityBorder = (p: number) => {
@@ -240,21 +356,24 @@ export default function Home() {
     ? pickPool.map(p => p.champion_name)
     : allChampions
 
-  const filtered = displayChampions.filter(name => {
+  const uniqueDisplayChampions = Array.from(new Set(displayChampions))
+
+  const filtered = uniqueDisplayChampions.filter(name => {
     if (search !== '' && !name.includes(search)) return false
     const info = getPickInfo(name)
+    const lanes = getChampionLanes(name)
     if (lane !== '全て') {
-      // ピックプールに登録済みの場合はレーンで絞り込む
-      // 未登録の場合は全チャンプモードでは表示する
-      if (info && !info.lane.includes(lane)) return false
+      if (lanes.length > 0 && !lanes.includes(lane)) return false
     }
     if (cls !== '全て') {
       if (info && info.class !== cls) return false
     }
+    if (selectedTag !== '全て') {
+      if (!getChampionTags(name).includes(selectedTag)) return false
+    }
     return true
   })
 
-  // カウンタースコアでソート
   const sorted = [...filtered].sort((a, b) => {
     const sa = getCounterScore(a)
     const sb = getCounterScore(b)
@@ -264,14 +383,23 @@ export default function Home() {
     return pb - pa
   })
 
+  const allTags = [...TAGS, ...userTags.map(t => t.name)]
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-4">
       <div className="max-w-6xl mx-auto">
 
         {/* ヘッダー */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold text-yellow-400">Pick Pool Tool</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-yellow-400">Pick Pool Tool</h1>
+            {currentPatch && <p className="text-xs text-gray-400">Patch {currentPatch}</p>}
+          </div>
           <div className="flex gap-2">
+            <button onClick={() => setShowTagManager(true)}
+              className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
+              タグ・レーン管理
+            </button>
             <button onClick={() => setBannedChamps(new Set())}
               className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
               BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
@@ -331,11 +459,23 @@ export default function Home() {
               </button>
             ))}
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap mb-2">
             {CLASSES.map(c => (
               <button key={c} onClick={() => setCls(c)}
                 className={`px-3 py-1 rounded font-bold text-sm ${cls === c ? 'bg-blue-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
                 {c}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 flex-wrap mt-2">
+            <button onClick={() => setSelectedTag('全て')}
+              className={`px-3 py-1 rounded font-bold text-sm ${selectedTag === '全て' ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
+              全て
+            </button>
+            {allTags.map(tag => (
+              <button key={tag} onClick={() => setSelectedTag(tag)}
+                className={`px-3 py-1 rounded font-bold text-sm ${selectedTag === tag ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                {tag}
               </button>
             ))}
           </div>
@@ -352,31 +492,31 @@ export default function Home() {
             const score = getCounterScore(name)
             const isCounter = score > 0
             const isDisadvantage = score < 0
+            const champTags = getChampionTags(name)
+            const champLanes = getChampionLanes(name)
 
             return (
               <div key={name}
                 className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all
                   ${isBanned ? 'opacity-40 border-red-700 bg-red-950'
+                    : enemyChamps.includes(name) ? 'opacity-40 border-orange-500 bg-orange-950'
                     : isCounter ? 'bg-green-950 border-green-400'
                     : isDisadvantage ? 'bg-red-950 border-red-800'
                     : isInPool ? `bg-gray-800 ${priorityBorder(pickInfo!.priority)}`
                     : 'bg-gray-850 border-gray-700 opacity-50'}
                 `}>
 
-                {/* BANボタン */}
                 <button onClick={() => toggleBan(name)}
                   className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
                   {isBanned ? '✕' : 'BAN'}
                 </button>
 
-                {/* カウンタースコア */}
                 {score !== 0 && (
                   <span className={`absolute top-1 left-1 text-xs font-bold ${score > 0 ? 'text-green-400' : 'text-red-400'}`}>
                     {score > 0 ? `+${score}` : score}
                   </span>
                 )}
 
-                {/* アイコン */}
                 <div className="relative">
                   {iconUrl
                     ? <img src={iconUrl} alt={name} className="w-12 h-12 rounded-full" />
@@ -387,13 +527,18 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* 名前 */}
                 <p className={`text-xs text-center font-bold leading-tight ${isInPool ? 'text-yellow-400' : 'text-gray-300'}`}>{name}</p>
 
-                {/* レーン */}
-                {isInPool && <p className="text-xs text-gray-400">{pickInfo.lane.join(' / ')}</p>}
+                {champLanes.length > 0 && <p className="text-xs text-gray-400">{champLanes.join(' / ')}</p>}
 
-                {/* 有利不利インジケーター */}
+                {champTags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 justify-center">
+                    {champTags.map(tag => (
+                      <span key={tag} className="text-xs bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>
+                    ))}
+                  </div>
+                )}
+
                 {mu && (
                   <div className="flex gap-1 text-xs">
                     {mu.favorable.length > 0 && <span className="text-green-400">▲{mu.favorable.length}</span>}
@@ -401,17 +546,16 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* ボタン */}
                 <div className="flex gap-1 mt-1">
-                {isInPool
-                  ? <button onClick={() => openEdit(pickInfo)} className="text-xs bg-blue-700 hover:bg-blue-600 px-1 rounded">編集</button>
-                  : <button onClick={() => openAdd(name)} className="text-xs bg-yellow-600 hover:bg-yellow-500 px-1 rounded">追加</button>
-                }
-                <button onClick={() => openMatchup(name)} className="text-xs bg-gray-600 hover:bg-gray-500 px-1 rounded">対面</button>
-                {isInPool && (
-                  <button onClick={() => { setResultForm({ myChamp: name, enemyChamp: enemyChamps.length === 1 ? enemyChamps[0] : '', enemySearch: '' }); setShowResultForm(true) }}
-                    className="text-xs bg-green-700 hover:bg-green-600 px-1 rounded">記録</button>
-                )}
+                  {isInPool
+                    ? <button onClick={() => openEdit(pickInfo)} className="text-xs bg-blue-700 hover:bg-blue-600 px-1 rounded">編集</button>
+                    : <button onClick={() => openAdd(name)} className="text-xs bg-yellow-600 hover:bg-yellow-500 px-1 rounded">追加</button>
+                  }
+                  <button onClick={() => openMatchup(name)} className="text-xs bg-gray-600 hover:bg-gray-500 px-1 rounded">対面</button>
+                  {isInPool && (
+                    <button onClick={() => { setResultForm({ myChamp: name, enemyChamp: enemyChamps.length === 1 ? enemyChamps[0] : '', enemySearch: '' }); setShowResultForm(true) }}
+                      className="text-xs bg-green-700 hover:bg-green-600 px-1 rounded">記録</button>
+                  )}
                 </div>
               </div>
             )
@@ -454,7 +598,7 @@ export default function Home() {
       {/* 追加・編集フォーム */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md max-h-screen overflow-y-auto">
             <h2 className="text-xl font-bold mb-4 text-yellow-400">
               {editingChamp ? '編集' : '追加'}: {form.champion_name}
             </h2>
@@ -484,6 +628,22 @@ export default function Home() {
                 onChange={e => setForm({ ...form, priority: Number(e.target.value) })}
                 className="w-full" />
             </div>
+            <div className="mb-3">
+              <p className="text-sm text-gray-400 mb-1">タグ（複数選択可）</p>
+              <div className="flex gap-2 flex-wrap">
+                {allTags.map(tag => (
+                  <button key={tag} type="button"
+                    onClick={() => {
+                      const current = form.tags || []
+                      const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
+                      setForm({ ...form, tags: next })
+                    }}
+                    className={`px-2 py-1 rounded text-xs font-bold ${(form.tags || []).includes(tag) ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
             <input placeholder="メモ（任意）" value={form.note}
               onChange={e => setForm({ ...form, note: e.target.value })}
               className="w-full p-2 mb-4 rounded bg-gray-700" />
@@ -494,7 +654,7 @@ export default function Home() {
               {editingChamp && (
                 <button onClick={() => { removeFromPool(editingChamp.id); setShowForm(false) }}
                   className="flex-1 p-2 bg-red-700 text-white font-bold rounded hover:bg-red-600">
-                  ピックプールから削除
+                  削除
                 </button>
               )}
               <button onClick={() => setShowForm(false)} className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
@@ -565,61 +725,178 @@ export default function Home() {
         </div>
       )}
 
+      {/* 試合結果フォーム */}
       {showResultForm && (
-      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-        <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md">
-          <h2 className="text-xl font-bold mb-2 text-yellow-400">試合結果を記録</h2>
-          <p className="text-gray-400 text-sm mb-4">自チャンプ: <span className="text-white font-bold">{resultForm.myChamp}</span></p>
-
-          <p className="text-sm text-gray-400 mb-2">相手チャンプを選択</p>
-          <input type="text" placeholder="検索..." value={resultForm.enemySearch}
-            onChange={e => setResultForm({ ...resultForm, enemySearch: e.target.value })}
-            className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
-          <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto mb-4">
-            {(enemyChamps.length > 0 ? enemyChamps : allChampions).filter(n => n !== resultForm.myChamp && (resultForm.enemySearch === '' || n.includes(resultForm.enemySearch))).map(name => {
-              const wr = matchResults[resultForm.myChamp]?.[name]
-              const wrText = wr ? `${Math.round(wr.wins / wr.total * 100)}%(${wr.total})` : ''
-              return (
-                <button key={name} onClick={() => setResultForm({ ...resultForm, enemyChamp: name })}
-                  className={`text-xs p-1 rounded flex flex-col items-center gap-1 border transition-all
-                    ${resultForm.enemyChamp === name ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
-                  {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                  <span className="truncate w-full text-center">{name}</span>
-                  {wrText && <span className="text-xs text-gray-400">{wrText}</span>}
-                </button>
-              )
-            })}
-          </div>
-
-          {resultForm.enemyChamp && (
-            <div className="mb-4">
-              <p className="text-sm text-gray-400 mb-2">対 <span className="text-white font-bold">{resultForm.enemyChamp}</span> の結果</p>
-              {matchResults[resultForm.myChamp]?.[resultForm.enemyChamp] && (
-                <p className="text-sm text-gray-400 mb-2">
-                  現在の勝率: <span className="text-yellow-400 font-bold">
-                    {Math.round(matchResults[resultForm.myChamp][resultForm.enemyChamp].wins / matchResults[resultForm.myChamp][resultForm.enemyChamp].total * 100)}%
-                  </span>
-                  （{matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}勝
-                  {matchResults[resultForm.myChamp][resultForm.enemyChamp].total - matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}敗）
-                </p>
-              )}
-              <div className="flex gap-3">
-                <button onClick={() => { saveMatchResult(resultForm.myChamp, resultForm.enemyChamp, 'win'); setShowResultForm(false) }}
-                  className="flex-1 p-3 bg-blue-600 hover:bg-blue-500 font-bold rounded text-lg">
-                  勝ち 🏆
-                </button>
-                <button onClick={() => { saveMatchResult(resultForm.myChamp, resultForm.enemyChamp, 'lose'); setShowResultForm(false) }}
-                  className="flex-1 p-3 bg-red-700 hover:bg-red-600 font-bold rounded text-lg">
-                  負け 💀
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-2 text-yellow-400">試合結果を記録</h2>
+            <p className="text-gray-400 text-sm mb-4">自チャンプ: <span className="text-white font-bold">{resultForm.myChamp}</span></p>
+            <p className="text-sm text-gray-400 mb-2">相手チャンプを選択</p>
+            <input type="text" placeholder="検索..." value={resultForm.enemySearch}
+              onChange={e => setResultForm({ ...resultForm, enemySearch: e.target.value })}
+              className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
+            <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto mb-4">
+              {(enemyChamps.length > 0 ? enemyChamps : allChampions).filter(n => n !== resultForm.myChamp && (resultForm.enemySearch === '' || n.includes(resultForm.enemySearch))).map(name => {
+                const wr = matchResults[resultForm.myChamp]?.[name]
+                const wrText = wr ? `${Math.round(wr.wins / wr.total * 100)}%(${wr.total})` : ''
+                return (
+                  <button key={name} onClick={() => setResultForm({ ...resultForm, enemyChamp: name })}
+                    className={`text-xs p-1 rounded flex flex-col items-center gap-1 border transition-all
+                      ${resultForm.enemyChamp === name ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
+                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
+                    <span className="truncate w-full text-center">{name}</span>
+                    {wrText && <span className="text-xs text-gray-400">{wrText}</span>}
+                  </button>
+                )
+              })}
             </div>
-          )}
-
-          <button onClick={() => setShowResultForm(false)} className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-2">キャンセル</button>
+            {resultForm.enemyChamp && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-400 mb-2">対 <span className="text-white font-bold">{resultForm.enemyChamp}</span> の結果</p>
+                {matchResults[resultForm.myChamp]?.[resultForm.enemyChamp] && (
+                  <p className="text-sm text-gray-400 mb-2">
+                    現在の勝率: <span className="text-yellow-400 font-bold">
+                      {Math.round(matchResults[resultForm.myChamp][resultForm.enemyChamp].wins / matchResults[resultForm.myChamp][resultForm.enemyChamp].total * 100)}%
+                    </span>
+                    （{matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}勝
+                    {matchResults[resultForm.myChamp][resultForm.enemyChamp].total - matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}敗）
+                  </p>
+                )}
+                <div className="flex gap-3">
+                  <button onClick={() => { saveMatchResult(resultForm.myChamp, resultForm.enemyChamp, 'win'); setShowResultForm(false) }}
+                    className="flex-1 p-3 bg-blue-600 hover:bg-blue-500 font-bold rounded text-lg">
+                    勝ち 🏆
+                  </button>
+                  <button onClick={() => { saveMatchResult(resultForm.myChamp, resultForm.enemyChamp, 'lose'); setShowResultForm(false) }}
+                    className="flex-1 p-3 bg-red-700 hover:bg-red-600 font-bold rounded text-lg">
+                    負け 💀
+                  </button>
+                </div>
+              </div>
+            )}
+            <button onClick={() => setShowResultForm(false)} className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-2">キャンセル</button>
+          </div>
         </div>
-      </div>
-    )}
+      )}
+
+      {/* タグ・レーン管理 */}
+      {showTagManager && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl max-h-screen overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4 text-purple-400">タグ・レーン管理</h2>
+
+            {!bulkMode ? (
+              <>
+                {/* タグセクション */}
+                <div className="mb-6">
+                  <h3 className="text-lg font-bold text-purple-300 mb-3">タグ管理</h3>
+                  <div className="flex gap-2 mb-4">
+                    <input type="text" placeholder="新しいタグ名..." value={newTagName}
+                      onChange={e => setNewTagName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && addTag()}
+                      className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-purple-400" />
+                    <button onClick={addTag} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded font-bold">追加</button>
+                  </div>
+                  <div className="grid gap-2">
+                    {TAGS.map(tag => (
+                      <div key={`default-${tag}`} className="flex items-center justify-between bg-gray-700 p-3 rounded">
+                        <span className="text-purple-300 font-bold">{tag} <span className="text-xs text-gray-500">（デフォルト）</span></span>
+                        <button onClick={() => openBulkTag(tag)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">チャンプ一括設定</button>
+                      </div>
+                    ))}
+                    {userTags.map(tag => (
+                      <div key={tag.id} className="flex items-center justify-between bg-gray-700 p-3 rounded">
+                        <span className="text-purple-300 font-bold">{tag.name}</span>
+                        <div className="flex gap-2">
+                          <button onClick={() => openBulkTag(tag.name)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">チャンプ一括設定</button>
+                          <button onClick={() => deleteTag(tag.id, tag.name)} className="px-3 py-1 bg-red-700 hover:bg-red-600 rounded text-sm">削除</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* レーンセクション */}
+                <div className="mb-4">
+                  <h3 className="text-lg font-bold text-yellow-300 mb-3">レーン一括設定</h3>
+                  <div className="grid gap-2">
+                    {LANES.filter(l => l !== '全て').map(l => (
+                      <div key={l} className="flex items-center justify-between bg-gray-700 p-3 rounded">
+                        <span className="text-yellow-300 font-bold">{l}</span>
+                        <button onClick={() => openBulkLane(l)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">チャンプ一括設定</button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : bulkMode === 'tag' ? (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <button onClick={() => { setBulkMode(null); setSelectedTagForBulk(null) }} className="text-gray-400 hover:text-white">← 戻る</button>
+                  <h3 className="text-lg font-bold text-purple-300">「{selectedTagForBulk}」のチャンプ設定</h3>
+                </div>
+                <input type="text" placeholder="検索..." value={bulkSearch}
+                  onChange={e => setBulkSearch(e.target.value)}
+                  className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600" />
+                <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto mb-4">
+                  {allChampions.filter(n => bulkSearch === '' || n.includes(bulkSearch)).map(name => {
+                    const isSelected = bulkTagChamps.includes(name)
+                    const isInPool = !!getPickInfo(name)
+                    return (
+                      <button key={name} onClick={() => setBulkTagChamps(prev => prev.includes(name) ? prev.filter(n2 => n2 !== name) : [...prev, name])}
+                        className={`text-xs p-1 rounded flex items-center gap-1 border transition-all
+                          ${isSelected && isInPool ? 'border-purple-400 bg-purple-900'
+                            : isSelected ? 'border-purple-400 bg-purple-950'
+                            : isInPool ? 'border-yellow-600 bg-gray-700 hover:border-purple-400'
+                            : 'border-gray-600 bg-gray-700 hover:border-purple-400'}`}>
+                        {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
+                        <span className="truncate">{name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button onClick={saveBulkTag} className="w-full p-2 bg-purple-600 hover:bg-purple-500 font-bold rounded">保存</button>
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <button onClick={() => { setBulkMode(null); setSelectedLaneForBulk(null) }} className="text-gray-400 hover:text-white">← 戻る</button>
+                  <h3 className="text-lg font-bold text-yellow-300">「{selectedLaneForBulk}」のチャンプ設定</h3>
+                </div>
+                <input type="text" placeholder="検索..." value={bulkSearch}
+                  onChange={e => setBulkSearch(e.target.value)}
+                  className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600" />
+                <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto mb-4">
+                  {allChampions.filter(n => bulkSearch === '' || n.includes(bulkSearch)).map(name => {
+                    const currentLanes = bulkLaneChamps[name] || []
+                    const isSelected = currentLanes.includes(selectedLaneForBulk!)
+                    const isInPool = !!getPickInfo(name)
+                    return (
+                      <button key={name} onClick={() => {
+                        const current = bulkLaneChamps[name] || []
+                        const next = isSelected ? current.filter(l => l !== selectedLaneForBulk) : [...current, selectedLaneForBulk!]
+                        setBulkLaneChamps(prev => ({ ...prev, [name]: next }))
+                      }}
+                        className={`text-xs p-1 rounded flex items-center gap-1 border transition-all
+                          ${isSelected && isInPool ? 'border-yellow-400 bg-yellow-900'
+                            : isSelected ? 'border-yellow-400 bg-yellow-950'
+                            : isInPool ? 'border-blue-500 bg-gray-700 hover:border-yellow-400'
+                            : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
+                        {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
+                        <span className="truncate">{name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button onClick={saveBulkLane} className="w-full p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">保存</button>
+              </div>
+            )}
+
+            <button onClick={() => { setShowTagManager(false); setBulkMode(null); setSelectedTagForBulk(null); setSelectedLaneForBulk(null) }}
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-3">閉じる</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
