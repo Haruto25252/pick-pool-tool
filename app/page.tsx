@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { getChampionIcon, championMap } from '@/lib/champions'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
-const TAGS = ['タンク', 'ブルーザー', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'エンチャンター', 'メイジ', 'ダイブ', 'ピール', 'スプリット', 'スケーリング', 'アーリーゲーム']
+const TAGS = ['ファイター', 'タンク', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'スケーリング']
 
 type PickPool = {
   id: string
@@ -103,13 +103,14 @@ export default function Home() {
   }, [])
 
   const fetchData = async () => {
-    const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }] = await Promise.all([
+    const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }, { data: defaultConfigs }] = await Promise.all([
       supabase.from('pick_pool').select('*').order('priority', { ascending: false }),
       supabase.from('matchup').select('*'),
       supabase.from('match_result').select('*'),
       supabase.from('default_matchup').select('*'),
       supabase.from('user_tags').select('*').order('created_at'),
-      supabase.from('champion_config').select('*')
+      supabase.from('champion_config').select('*'),
+      supabase.from('default_champion_config').select('*')
     ])
     if (pool) setPickPool(pool)
     if (mu) {
@@ -131,7 +132,11 @@ export default function Home() {
     }
     if (userTagsData) setUserTags(userTagsData)
     if (configs) {
-      const map: Record<string, ChampionConfig> = {}
+      const defaultMap: Record<string, ChampionConfig> = {}
+      if (defaultConfigs) {
+        defaultConfigs.forEach((c: ChampionConfig) => { defaultMap[c.champion_name] = c })
+      }
+      const map: Record<string, ChampionConfig> = { ...defaultMap }
       configs.forEach((c: ChampionConfig) => { map[c.champion_name] = c })
       setChampionConfigs(map)
     }

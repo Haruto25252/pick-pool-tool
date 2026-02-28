@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js'
 
 const SUPABASE_URL = 'https://uxinvinstjlhkkhrmrdx.supabase.co'
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4aW52aW5zdGpsaGtraHJtcmR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxOTE3NTEsImV4cCI6MjA4Nzc2Nzc1MX0.bqUN22wS761LnqD7duV0Lw4hmJFs-2w3l6h0FAJ9Qvg'
-const ADMIN_EMAIL = 'haruhiro.u@icloud.com'
-const ADMIN_PASSWORD = 'Urabeharuhiro0502'
+const ADMIN_EMAIL = ''
+const ADMIN_PASSWORD = ''
 
 const TAG_MAP = {
   'Fighter': 'ファイター',
