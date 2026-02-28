@@ -430,18 +430,20 @@ export default function Home() {
   const sorted = [...filtered].sort((a, b) => {
     const sa = getCounterScore(a)
     const sb = getCounterScore(b)
-    
-    // スキルマッチアップ判定（有利かつ不利に両方入っている）
-    const favorable = enemyChamps.length > 0
-    const aFav = enemyChamps.some(e => matchups[a]?.favorable.includes(e))
-    const aUnfav = enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
-    const bFav = enemyChamps.some(e => matchups[b]?.favorable.includes(e))
-    const bUnfav = enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
-    const aSkill = aFav && aUnfav
-    const bSkill = bFav && bUnfav
 
-    if (favorable) {
-      // 有利(score>0) > スキル(score=0かつ両方) > 未設定(score=0) > 不利(score<0)
+    const aSkill = enemyChamps.some(e => matchups[a]?.favorable.includes(e)) &&
+                   enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
+    const bSkill = enemyChamps.some(e => matchups[b]?.favorable.includes(e)) &&
+                   enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
+
+    if (viewMode === 'all') {
+      // 全チャンプモード：カウンタースコア純粋に並べる
+      if (sb !== sa) return sb - sa
+      return 0
+    }
+
+    // ピックプールモード：グループ分けしてから優先度
+    if (enemyChamps.length > 0) {
       const aGroup = sa > 0 ? 0 : aSkill ? 1 : sa === 0 ? 2 : 3
       const bGroup = sb > 0 ? 0 : bSkill ? 1 : sb === 0 ? 2 : 3
       if (aGroup !== bGroup) return aGroup - bGroup
