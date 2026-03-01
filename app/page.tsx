@@ -115,7 +115,7 @@ export default function Home() {
   const fetchData = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }, { data: defaultConfigs }, { data: profileData }, { data: allProfiles }] = await Promise.all([
-      supabase.from('pick_pool').select('*').order('priority', { ascending: false }),
+      supabase.from('pick_pool').select('*').eq('user_id', user!.id).order('priority', { ascending: false }),
       supabase.from('matchup').select('*'),
       supabase.from('match_result').select('*'),
       supabase.from('default_matchup').select('*'),
