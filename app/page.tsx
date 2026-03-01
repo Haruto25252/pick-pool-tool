@@ -551,14 +551,6 @@ export default function Home() {
               className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
               👥 みんなのプール
             </button>
-            <button onClick={() => setShowTagManager(true)}
-              className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
-              タグ・レーン管理
-            </button>
-            <button onClick={() => setBannedChamps(new Set())}
-              className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
-              BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
-            </button>
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
               className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
               ログアウト
@@ -593,7 +585,7 @@ export default function Home() {
 
         {/* モード切り替え・検索・フィルター */}
         <div className="mb-4">
-          <div className="flex gap-2 mb-3">
+          <div className="flex gap-2 mb-3 items-center flex-wrap">
             <button onClick={() => setViewMode('pool')}
               className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
               ピックプール
@@ -602,6 +594,16 @@ export default function Home() {
               className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'all' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
               全チャンプ
             </button>
+            <div className="ml-auto flex gap-2">
+              <button onClick={() => setShowTagManager(true)}
+                className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
+                タグ・レーン管理
+              </button>
+              <button onClick={() => setBannedChamps(new Set())}
+                className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
+                BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
+              </button>
+            </div>
           </div>
           <input type="text" placeholder="チャンピオン名で検索..."
             value={search} onChange={e => setSearch(e.target.value)}
