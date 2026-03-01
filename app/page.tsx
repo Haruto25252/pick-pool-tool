@@ -113,6 +113,7 @@ export default function Home() {
   }, [])
 
   const fetchData = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
     const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }, { data: defaultConfigs }, { data: profileData }, { data: allProfiles }] = await Promise.all([
       supabase.from('pick_pool').select('*').order('priority', { ascending: false }),
       supabase.from('matchup').select('*'),
@@ -121,7 +122,7 @@ export default function Home() {
       supabase.from('user_tags').select('*').order('created_at'),
       supabase.from('champion_config').select('*'),
       supabase.from('default_champion_config').select('*'),
-      supabase.from('profile').select('username').single(),
+      supabase.from('profile').select('username').eq('id', user!.id).single(),
       supabase.from('profile').select('id, username').order('username')
     ])
     if (pool) setPickPool(pool)
