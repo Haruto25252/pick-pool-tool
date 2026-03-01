@@ -96,6 +96,8 @@ export default function Home() {
   const [showUserList, setShowUserList] = useState(false)
   const [userList, setUserList] = useState<{id: string, username: string}[]>([])
   const [userListSearch, setUserListSearch] = useState('')
+  const [showLolalyticsModal, setShowLolalyticsModal] = useState(false)
+  const [lolalyticsChamp, setLolalyticsChamp] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -675,8 +677,15 @@ export default function Home() {
                   )}
                   <button onClick={() => window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank')}
                     className="text-xs bg-orange-700 hover:bg-orange-600 px-1 rounded">OP.GG</button>
-                  {enemyChamps.length === 1 && (
-                    <button onClick={() => window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[enemyChamps[0]]?.toLowerCase()}/build/`, '_blank')}
+                  {enemyChamps.length >= 1 && (
+                    <button onClick={() => {
+                      if (enemyChamps.length === 1) {
+                        window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[enemyChamps[0]]?.toLowerCase()}/build/`, '_blank')
+                      } else {
+                        setLolalyticsChamp(name)
+                        setShowLolalyticsModal(true)
+                      }
+                    }}
                       className="text-xs bg-teal-700 hover:bg-teal-600 px-1 rounded">対面</button>
                   )}
                 </div>
@@ -1108,6 +1117,31 @@ export default function Home() {
               ))}
             </div>
             <button onClick={() => { setShowUserList(false); setUserListSearch('') }}
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
+          </div>
+        </div>
+      )}
+      {/* Lolalytics対面選択モーダル */}
+      {showLolalyticsModal && lolalyticsChamp && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+            <h2 className="text-lg font-bold mb-4 text-teal-400">
+              {lolalyticsChamp} の対面を選択
+            </h2>
+            <div className="grid gap-2 max-h-72 overflow-y-auto mb-4">
+              {enemyChamps.map(enemy => (
+                <button key={enemy} onClick={() => {
+                  window.open(`https://lolalytics.com/ja/lol/${championMap[lolalyticsChamp]?.toLowerCase()}/vs/${championMap[enemy]?.toLowerCase()}/build/`, '_blank')
+                  setShowLolalyticsModal(false)
+                }}
+                  className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 p-3 rounded transition-all">
+                  {getChampionIcon(enemy) && <img src={getChampionIcon(enemy)} alt={enemy} className="w-6 h-6 rounded-full" />}
+                  <span className="font-bold text-white">vs {enemy}</span>
+                  <span className="text-gray-400 text-sm ml-auto">開く →</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowLolalyticsModal(false)}
               className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
           </div>
         </div>
