@@ -1,0 +1,54 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase'
+
+export default function ConfirmPage() {
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
+  const router = useRouter()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setStatus('success')
+        setTimeout(() => router.push('/'), 3000)
+      } else {
+        setStatus('error')
+      }
+    }
+    checkSession()
+  }, [])
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+      <div className="bg-gray-800 p-8 rounded-lg text-center max-w-md w-full">
+        {status === 'loading' && (
+          <>
+            <p className="text-gray-400 text-lg">確認中...</p>
+          </>
+        )}
+        {status === 'success' && (
+          <>
+            <p className="text-4xl mb-4">✅</p>
+            <h1 className="text-2xl font-bold text-green-400 mb-2">メール認証完了！</h1>
+            <p className="text-gray-400">3秒後にアプリに移動します...</p>
+          </>
+        )}
+        {status === 'error' && (
+          <>
+            <p className="text-4xl mb-4">❌</p>
+            <h1 className="text-2xl font-bold text-red-400 mb-2">認証に失敗しました</h1>
+            <p className="text-gray-400 mb-4">リンクの有効期限が切れているか、すでに使用済みです。</p>
+            <button onClick={() => router.push('/login')}
+              className="px-4 py-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
+              ログインページへ
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
