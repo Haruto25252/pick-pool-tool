@@ -511,10 +511,16 @@ export default function Home() {
           </div>
           <div className="flex gap-2 flex-wrap justify-end">
             {riotId ? (
-              <button onClick={() => window.open(`https://www.op.gg/summoners/jp/${encodeURIComponent(riotId.replace('#', '-'))}`, '_blank')}
-                className="px-3 py-2 bg-orange-700 rounded hover:bg-orange-600 text-sm font-bold">
-                OP.GG
-              </button>
+              <div className="flex gap-1">
+                <button onClick={() => window.open(`https://www.op.gg/summoners/jp/${encodeURIComponent(riotId.replace('#', '-'))}`, '_blank')}
+                  className="px-3 py-2 bg-orange-700 rounded-l hover:bg-orange-600 text-sm font-bold">
+                  OP.GG
+                </button>
+                <button onClick={() => { setNewRiotId(riotId); setShowRiotIdModal(true) }}
+                  className="px-2 py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm">
+                  ✏️
+                </button>
+              </div>
             ) : (
               <button onClick={() => setShowRiotIdModal(true)}
                 className="px-3 py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm">
@@ -559,7 +565,7 @@ export default function Home() {
             </button>
           </div>
         </div>
-        
+
         {/* 相手チャンプ選択 */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
