@@ -46,6 +46,9 @@ export default function UserPage() {
   const [showEnemyPicker, setShowEnemyPicker] = useState(false)
   const [enemySearch, setEnemySearch] = useState('')
   const [userTags, setUserTags] = useState<string[]>([])
+  const [showUserList, setShowUserList] = useState(false)
+  const [userList, setUserList] = useState<{id: string, username: string}[]>([])
+  const [userListSearch, setUserListSearch] = useState('')
 
   const allChampions = Object.keys(championMap)
 
@@ -79,6 +82,8 @@ export default function UserPage() {
         const tags = Array.from(new Set(configs.flatMap((c: ChampionConfig) => c.tags || [])))
         setUserTags(tags)
       }
+      const { data: profiles } = await supabase.from('profile').select('id, username').order('username')
+      if (profiles) setUserList(profiles)
     }
     init()
   }, [username])
@@ -157,16 +162,20 @@ export default function UserPage() {
             <h1 className="text-2xl font-bold text-yellow-400">{decodeURIComponent(username)} のピックプール</h1>
             <p className="text-xs text-gray-400">閲覧モード（編集不可）</p>
           </div>
-          <div className="flex gap-2">
-            <button onClick={() => setBannedChamps(new Set())}
-              className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
-              BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
-            </button>
-            <button onClick={() => router.push('/')}
-              className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
-              自分のページへ
-            </button>
-          </div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowUserList(true)}
+                className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
+                👥 みんなのプール
+              </button>
+              <button onClick={() => setBannedChamps(new Set())}
+                className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
+                BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
+              </button>
+              <button onClick={() => router.push('/')}
+                className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
+                自分のページへ
+              </button>
+            </div>
         </div>
 
         {/* 相手チャンプ */}
@@ -300,6 +309,30 @@ export default function UserPage() {
               className="w-full p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
               完了
             </button>
+          </div>
+        </div>
+      )}
+      {/* ユーザー一覧モーダル */}
+      {showUserList && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4 text-blue-400">👥 みんなのピックプール</h2>
+            <input type="text" placeholder="ユーザー名で検索..." value={userListSearch}
+              onChange={e => setUserListSearch(e.target.value)}
+              className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-blue-400" />
+            <div className="grid gap-2 max-h-96 overflow-y-auto mb-4">
+              {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).length === 0 &&
+                <p className="text-gray-500 text-center py-4">ユーザーが見つかりません</p>}
+              {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).map(u => (
+                <button key={u.id} onClick={() => { router.push(`/user/${u.username}`); setShowUserList(false) }}
+                  className={`flex items-center justify-between p-3 rounded transition-all border ${u.username === decodeURIComponent(username) ? 'bg-blue-900 border-blue-400' : 'bg-gray-700 hover:bg-gray-600 border-transparent'}`}>
+                  <span className="font-bold text-white">{u.username}</span>
+                  <span className="text-gray-400 text-sm">{u.username === decodeURIComponent(username) ? '表示中' : '閲覧 →'}</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => { setShowUserList(false); setUserListSearch('') }}
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
           </div>
         </div>
       )}
