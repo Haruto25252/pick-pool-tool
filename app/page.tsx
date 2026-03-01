@@ -89,6 +89,10 @@ export default function Home() {
   const [bulkMatchupMode, setBulkMatchupMode] = useState<'favorable' | 'unfavorable' | 'skill' | 'none' | null>(null)
   const [enemyLane, setEnemyLane] = useState('全て')
   const [enemyTag, setEnemyTag] = useState('全て')
+  const [username, setUsername] = useState<string | null>(null)
+  const [showUsernameModal, setShowUsernameModal] = useState(false)
+  const [newUsername, setNewUsername] = useState('')
+  const [usernameError, setUsernameError] = useState('')
   const router = useRouter()
   const supabase = createClient()
 
@@ -107,14 +111,15 @@ export default function Home() {
   }, [])
 
   const fetchData = async () => {
-    const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }, { data: defaultConfigs }] = await Promise.all([
+    const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }, { data: defaultConfigs }, { data: profileData }] = await Promise.all([
       supabase.from('pick_pool').select('*').order('priority', { ascending: false }),
       supabase.from('matchup').select('*'),
       supabase.from('match_result').select('*'),
       supabase.from('default_matchup').select('*'),
       supabase.from('user_tags').select('*').order('created_at'),
       supabase.from('champion_config').select('*'),
-      supabase.from('default_champion_config').select('*')
+      supabase.from('default_champion_config').select('*'),
+      supabase.from('profile').select('username').single()
     ])
     if (pool) setPickPool(pool)
     if (mu) {
@@ -144,6 +149,20 @@ export default function Home() {
       configs.forEach((c: ChampionConfig) => { map[c.champion_name] = c })
       setChampionConfigs(map)
     }
+    if (profileData) setUsername(profileData.username)
+  }
+
+  const saveUsername = async () => {
+    if (!newUsername.trim()) return
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error } = await supabase.from('profile').upsert({ id: user!.id, username: newUsername.trim() })
+    if (error) {
+      setUsernameError('このユーザー名は既に使われています')
+      return
+    }
+    setUsername(newUsername.trim())
+    setShowUsernameModal(false)
+    setUsernameError('')
   }
 
   const getChampionTags = (name: string): string[] => {
@@ -414,8 +433,7 @@ export default function Home() {
 
   const uniqueDisplayChampions = Array.from(new Set(displayChampions))
 
-  const filtered = uniqueDisplayChampions.filter(name => {
-    if (search !== '' && !name.includes(search)) return false
+  const filtered = Array.from(new Set(pickPool.map(p => p.champion_name))).filter(name => {    if (search !== '' && !name.includes(search)) return false
     const info = getPickInfo(name)
     const lanes = getChampionLanes(name)
     if (lane !== '全て') {
@@ -462,27 +480,38 @@ export default function Home() {
     <div className="min-h-screen bg-gray-900 text-white p-4">
       <div className="max-w-6xl mx-auto">
 
-        {/* ヘッダー */}
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h1 className="text-2xl font-bold text-yellow-400">Pick Pool Tool</h1>
-            {currentPatch && <p className="text-xs text-gray-400">Patch {currentPatch}</p>}
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setShowTagManager(true)}
-              className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
-              タグ・レーン管理
-            </button>
-            <button onClick={() => setBannedChamps(new Set())}
-              className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
-              BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
-            </button>
-            <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
-              className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
-              ログアウト
-            </button>
-          </div>
+      {/* ヘッダー */}
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-yellow-400">Pick Pool Tool</h1>
+          {currentPatch && <p className="text-xs text-gray-400">Patch {currentPatch}</p>}
         </div>
+        <div className="flex gap-2 flex-wrap justify-end">
+          {username ? (
+            <button onClick={() => window.open(`/user/${username}`, '_blank')}
+              className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
+              🔗 {username}
+            </button>
+          ) : (
+            <button onClick={() => setShowUsernameModal(true)}
+              className="px-3 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">
+              ユーザー名を設定
+            </button>
+          )}
+          <button onClick={() => setShowTagManager(true)}
+            className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
+            タグ・レーン管理
+          </button>
+          <button onClick={() => setBannedChamps(new Set())}
+            className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
+            BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
+          </button>
+          <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
+            className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
+            ログアウト
+          </button>
+        </div>
+      </div>
 
         {/* 相手チャンプ選択 */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
@@ -629,6 +658,25 @@ export default function Home() {
             )
           })}
         </div>
+        {/* ユーザー名設定モーダル */}
+        {showUsernameModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+              <h2 className="text-xl font-bold mb-2 text-yellow-400">ユーザー名を設定</h2>
+              <p className="text-sm text-gray-400 mb-4">他のユーザーがあなたのピックプールを閲覧できるURLになります</p>
+              <input type="text" placeholder="ユーザー名..." value={newUsername}
+                onChange={e => setNewUsername(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && saveUsername()}
+                className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
+              {usernameError && <p className="text-red-400 text-sm mb-2">{usernameError}</p>}
+              <div className="flex gap-3">
+                <button onClick={saveUsername} className="flex-1 p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">保存</button>
+                <button onClick={() => { setShowUsernameModal(false); setUsernameError('') }}
+                  className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 相手チャンプピッカー */}
@@ -1015,5 +1063,6 @@ export default function Home() {
         </div>
       )}
     </div>
+    
   )
 }

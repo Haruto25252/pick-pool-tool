@@ -123,8 +123,7 @@ export default function UserPage() {
 
   const allTags = [...TAGS, ...userTags.filter(t => !TAGS.includes(t))]
 
-  const filtered = pickPool.map(p => p.champion_name).filter(name => {
-    if (search !== '' && !name.includes(search)) return false
+　const filtered = Array.from(new Set(pickPool.map(p => p.champion_name))).filter(name => {    if (search !== '' && !name.includes(search)) return false
     const lanes = getChampionLanes(name)
     if (lane !== '全て' && lanes.length > 0 && !lanes.includes(lane)) return false
     if (selectedTag !== '全て' && !getChampionTags(name).includes(selectedTag)) return false
