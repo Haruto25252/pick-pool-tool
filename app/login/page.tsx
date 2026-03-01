@@ -57,7 +57,15 @@ export default function LoginPage() {
           {isSignUp ? 'ログインはこちら' : '新規登録はこちら'}
         </p>
         {message && <p className="text-center text-red-400 mt-4">{message}</p>}
+        <div className="mt-6 pt-4 border-t border-gray-700 text-center">
+          <p className="text-gray-500 text-sm mb-2">登録なしで閲覧だけしたい場合</p>
+          <button onClick={() => router.push('/guest')}
+            className="w-full p-3 bg-gray-700 hover:bg-gray-600 rounded font-bold text-gray-300">
+            👁 ゲストとして参加
+          </button>
+        </div>
       </div>
     </div>
+    
   )
 }

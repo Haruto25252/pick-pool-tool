@@ -160,7 +160,7 @@ export default function Home() {
   const saveUsername = async () => {
     if (!newUsername.trim()) return
     const { data: { user } } = await supabase.auth.getUser()
-    const { error } = await supabase.from('profile').upsert({ id: user!.id, username: newUsername.trim() })
+    const { error } = await supabase.from('profile').upsert({ id: user!.id, username: newUsername.trim() }, { onConflict: 'id' })
     if (error) {
       setUsernameError('このユーザー名は既に使われています')
       return
@@ -494,13 +494,19 @@ export default function Home() {
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
           {username ? (
-            <button onClick={() => {
-              navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
-              alert('リンクをコピーしました！')
-            }}
-              className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
-              🔗 {username}
-            </button>
+            <div className="flex gap-1">
+              <button onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
+                alert('リンクをコピーしました！')
+              }}
+                className="px-3 py-2 bg-gray-700 rounded-l hover:bg-gray-600 text-sm">
+                🔗 {username}
+              </button>
+              <button onClick={() => { setNewUsername(username); setShowUsernameModal(true) }}
+                className="px-2 py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm">
+                ✏️
+              </button>
+            </div>
           ) : (
             <button onClick={() => setShowUsernameModal(true)}
               className="px-3 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">
