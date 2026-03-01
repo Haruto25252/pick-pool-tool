@@ -21,10 +21,26 @@ function ConfirmContent() {
           setStatus('error')
         } else {
           setStatus('success')
-          setTimeout(() => router.push('/'), 3000)
+          setTimeout(() => router.push('/'), 2000)
         }
       } else {
-        setStatus('error')
+        // Googleログイン後はURLのhashからセッションを取得
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          setStatus('success')
+          setTimeout(() => router.push('/'), 2000)
+        } else {
+          // 少し待ってから再確認
+          setTimeout(async () => {
+            const { data: { session: session2 } } = await supabase.auth.getSession()
+            if (session2) {
+              setStatus('success')
+              router.push('/')
+            } else {
+              setStatus('error')
+            }
+          }, 1000)
+        }
       }
     }
     confirm()
@@ -38,15 +54,15 @@ function ConfirmContent() {
       {status === 'success' && (
         <>
           <p className="text-4xl mb-4">✅</p>
-          <h1 className="text-2xl font-bold text-green-400 mb-2">メール認証完了！</h1>
-          <p className="text-gray-400">3秒後にアプリに移動します...</p>
+          <h1 className="text-2xl font-bold text-green-400 mb-2">ログイン完了！</h1>
+          <p className="text-gray-400">2秒後にアプリに移動します...</p>
         </>
       )}
       {status === 'error' && (
         <>
           <p className="text-4xl mb-4">❌</p>
           <h1 className="text-2xl font-bold text-red-400 mb-2">認証に失敗しました</h1>
-          <p className="text-gray-400 mb-4">リンクの有効期限が切れているか、すでに使用済みです。</p>
+          <p className="text-gray-400 mb-4">もう一度お試しください。</p>
           <button onClick={() => router.push('/login')}
             className="px-4 py-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
             ログインページへ
