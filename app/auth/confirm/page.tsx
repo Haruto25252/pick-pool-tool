@@ -1,34 +1,40 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
 export default function ConfirmPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   useEffect(() => {
-    const checkSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        setStatus('success')
-        setTimeout(() => router.push('/'), 3000)
+    const confirm = async () => {
+      const token_hash = searchParams.get('token_hash')
+      const type = searchParams.get('type')
+
+      if (token_hash && type) {
+        const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as any })
+        if (error) {
+          setStatus('error')
+        } else {
+          setStatus('success')
+          setTimeout(() => router.push('/'), 3000)
+        }
       } else {
         setStatus('error')
       }
     }
-    checkSession()
+    confirm()
   }, [])
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="bg-gray-800 p-8 rounded-lg text-center max-w-md w-full">
         {status === 'loading' && (
-          <>
-            <p className="text-gray-400 text-lg">確認中...</p>
-          </>
+          <p className="text-gray-400 text-lg">確認中...</p>
         )}
         {status === 'success' && (
           <>
