@@ -663,7 +663,7 @@ export default function Home() {
                   </div>
                 )}
 
-                <div className="flex gap-1 mt-1">
+                <div className="flex gap-1 mt-1 flex-wrap justify-center">
                   {isInPool
                     ? <button onClick={() => openEdit(pickInfo)} className="text-xs bg-blue-700 hover:bg-blue-600 px-1 rounded">編集</button>
                     : <button onClick={() => openAdd(name)} className="text-xs bg-yellow-600 hover:bg-yellow-500 px-1 rounded">追加</button>
@@ -672,6 +672,12 @@ export default function Home() {
                   {isInPool && (
                     <button onClick={() => { setResultForm({ myChamp: name, enemyChamp: enemyChamps.length === 1 ? enemyChamps[0] : '', enemySearch: '' }); setShowResultForm(true) }}
                       className="text-xs bg-green-700 hover:bg-green-600 px-1 rounded">記録</button>
+                  )}
+                  <button onClick={() => window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank')}
+                    className="text-xs bg-orange-700 hover:bg-orange-600 px-1 rounded">OP.GG</button>
+                  {enemyChamps.length === 1 && (
+                    <button onClick={() => window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[enemyChamps[0]]?.toLowerCase()}/build/`, '_blank')}
+                      className="text-xs bg-teal-700 hover:bg-teal-600 px-1 rounded">対面</button>
                   )}
                 </div>
               </div>
