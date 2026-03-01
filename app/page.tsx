@@ -93,6 +93,8 @@ export default function Home() {
   const [showUsernameModal, setShowUsernameModal] = useState(false)
   const [newUsername, setNewUsername] = useState('')
   const [usernameError, setUsernameError] = useState('')
+  const [showUserList, setShowUserList] = useState(false)
+  const [userList, setUserList] = useState<{id: string, username: string}[]>([])
   const router = useRouter()
   const supabase = createClient()
 
@@ -111,7 +113,7 @@ export default function Home() {
   }, [])
 
   const fetchData = async () => {
-    const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }, { data: defaultConfigs }, { data: profileData }] = await Promise.all([
+    const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }, { data: defaultConfigs }, { data: profileData }, { data: allProfiles }] = await Promise.all([
       supabase.from('pick_pool').select('*').order('priority', { ascending: false }),
       supabase.from('matchup').select('*'),
       supabase.from('match_result').select('*'),
@@ -119,7 +121,8 @@ export default function Home() {
       supabase.from('user_tags').select('*').order('created_at'),
       supabase.from('champion_config').select('*'),
       supabase.from('default_champion_config').select('*'),
-      supabase.from('profile').select('username').single()
+      supabase.from('profile').select('username').single(),
+      supabase.from('profile').select('id, username').order('username')
     ])
     if (pool) setPickPool(pool)
     if (mu) {
@@ -150,6 +153,7 @@ export default function Home() {
       setChampionConfigs(map)
     }
     if (profileData) setUsername(profileData.username)
+    if (allProfiles) setUserList(allProfiles)
   }
 
   const saveUsername = async () => {
@@ -433,7 +437,8 @@ export default function Home() {
 
   const uniqueDisplayChampions = Array.from(new Set(displayChampions))
 
-  const filtered = Array.from(new Set(pickPool.map(p => p.champion_name))).filter(name => {    if (search !== '' && !name.includes(search)) return false
+  const filtered = uniqueDisplayChampions.filter(name => {
+    if (search !== '' && !name.includes(search)) return false
     const info = getPickInfo(name)
     const lanes = getChampionLanes(name)
     if (lane !== '全て') {
@@ -488,7 +493,10 @@ export default function Home() {
         </div>
         <div className="flex gap-2 flex-wrap justify-end">
           {username ? (
-            <button onClick={() => window.open(`/user/${username}`, '_blank')}
+            <button onClick={() => {
+              navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
+              alert('リンクをコピーしました！')
+            }}
               className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
               🔗 {username}
             </button>
@@ -498,6 +506,10 @@ export default function Home() {
               ユーザー名を設定
             </button>
           )}
+          <button onClick={() => setShowUserList(true)}
+            className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
+            👥 みんなのプール
+          </button>
           <button onClick={() => setShowTagManager(true)}
             className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
             タグ・レーン管理
@@ -1059,6 +1071,26 @@ export default function Home() {
 
             <button onClick={() => { setShowTagManager(false); setBulkMode(null); setSelectedTagForBulk(null); setSelectedLaneForBulk(null) }}
               className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-3">閉じる</button>
+          </div>
+        </div>
+      )}
+      {/* ユーザー一覧モーダル */}
+      {showUserList && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4 text-blue-400">👥 みんなのピックプール</h2>
+            <div className="grid gap-2 max-h-96 overflow-y-auto mb-4">
+              {userList.length === 0 && <p className="text-gray-500 text-center py-4">ユーザーがいません</p>}
+              {userList.map(u => (
+                <button key={u.id} onClick={() => { window.open(`/user/${u.username}`, '_blank'); setShowUserList(false) }}
+                  className="flex items-center justify-between bg-gray-700 hover:bg-gray-600 p-3 rounded transition-all">
+                  <span className="font-bold text-white">{u.username}</span>
+                  <span className="text-gray-400 text-sm">閲覧 →</span>
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setShowUserList(false)}
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
           </div>
         </div>
       )}
