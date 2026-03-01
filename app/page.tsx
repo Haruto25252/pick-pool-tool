@@ -98,6 +98,9 @@ export default function Home() {
   const [userListSearch, setUserListSearch] = useState('')
   const [showLolalyticsModal, setShowLolalyticsModal] = useState(false)
   const [lolalyticsChamp, setLolalyticsChamp] = useState<string | null>(null)
+  const [riotId, setRiotId] = useState<string | null>(null)
+  const [newRiotId, setNewRiotId] = useState('')
+  const [showRiotIdModal, setShowRiotIdModal] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -125,7 +128,7 @@ export default function Home() {
       supabase.from('user_tags').select('*').order('created_at'),
       supabase.from('champion_config').select('*'),
       supabase.from('default_champion_config').select('*'),
-      supabase.from('profile').select('username').eq('id', user!.id).single(),
+      supabase.from('profile').select('username, riot_id').eq('id', user!.id).single(),
       supabase.from('profile').select('id, username').order('username')
     ])
     if (pool) setPickPool(pool)
@@ -156,8 +159,19 @@ export default function Home() {
       configs.forEach((c: ChampionConfig) => { map[c.champion_name] = c })
       setChampionConfigs(map)
     }
-    if (profileData) setUsername(profileData.username)
+    if (profileData) {
+      setUsername(profileData.username)
+      setRiotId(profileData.riot_id)
+    }
     if (allProfiles) setUserList(allProfiles)
+  }
+
+  const saveRiotId = async () => {
+    if (!newRiotId.trim()) return
+    const { data: { user } } = await supabase.auth.getUser()
+    await supabase.from('profile').update({ riot_id: newRiotId.trim() }).eq('id', user!.id)
+    setRiotId(newRiotId.trim())
+    setShowRiotIdModal(false)
   }
 
   const saveUsername = async () => {
@@ -489,52 +503,63 @@ export default function Home() {
     <div className="min-h-screen bg-gray-900 text-white p-4">
       <div className="max-w-6xl mx-auto">
 
-      {/* ヘッダー */}
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h1 className="text-2xl font-bold text-yellow-400">Pick Pool Tool</h1>
-          {currentPatch && <p className="text-xs text-gray-400">Patch {currentPatch}</p>}
-        </div>
-        <div className="flex gap-2 flex-wrap justify-end">
-          {username ? (
-            <div className="flex gap-1">
-              <button onClick={() => {
-                navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
-                alert('リンクをコピーしました！')
-              }}
-                className="px-3 py-2 bg-gray-700 rounded-l hover:bg-gray-600 text-sm">
-                🔗 {username}
+        {/* ヘッダー */}
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-yellow-400">Pick Pool Tool</h1>
+            {currentPatch && <p className="text-xs text-gray-400">Patch {currentPatch}</p>}
+          </div>
+          <div className="flex gap-2 flex-wrap justify-end">
+            {riotId ? (
+              <button onClick={() => window.open(`https://www.op.gg/summoners/jp/${encodeURIComponent(riotId.replace('#', '-'))}`, '_blank')}
+                className="px-3 py-2 bg-orange-700 rounded hover:bg-orange-600 text-sm font-bold">
+                OP.GG
               </button>
-              <button onClick={() => { setNewUsername(username); setShowUsernameModal(true) }}
-                className="px-2 py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm">
-                ✏️
+            ) : (
+              <button onClick={() => setShowRiotIdModal(true)}
+                className="px-3 py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm">
+                RiotID設定
               </button>
-            </div>
-          ) : (
-            <button onClick={() => setShowUsernameModal(true)}
-              className="px-3 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">
-              ユーザー名を設定
+            )}
+            {username ? (
+              <div className="flex gap-1">
+                <button onClick={() => {
+                  navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
+                  alert('リンクをコピーしました！')
+                }}
+                  className="px-3 py-2 bg-gray-700 rounded-l hover:bg-gray-600 text-sm">
+                  🔗 {username}
+                </button>
+                <button onClick={() => { setNewUsername(username); setShowUsernameModal(true) }}
+                  className="px-2 py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm">
+                  ✏️
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setShowUsernameModal(true)}
+                className="px-3 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">
+                ユーザー名を設定
+              </button>
+            )}
+            <button onClick={() => setShowUserList(true)}
+              className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
+              👥 みんなのプール
             </button>
-          )}
-          <button onClick={() => setShowUserList(true)}
-            className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
-            👥 みんなのプール
-          </button>
-          <button onClick={() => setShowTagManager(true)}
-            className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
-            タグ・レーン管理
-          </button>
-          <button onClick={() => setBannedChamps(new Set())}
-            className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
-            BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
-          </button>
-          <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
-            className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
-            ログアウト
-          </button>
+            <button onClick={() => setShowTagManager(true)}
+              className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
+              タグ・レーン管理
+            </button>
+            <button onClick={() => setBannedChamps(new Set())}
+              className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
+              BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
+            </button>
+            <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
+              className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
+              ログアウト
+            </button>
+          </div>
         </div>
-      </div>
-
+        
         {/* 相手チャンプ選択 */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
@@ -1143,6 +1168,24 @@ export default function Home() {
             </div>
             <button onClick={() => setShowLolalyticsModal(false)}
               className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
+          </div>
+        </div>
+      )}
+      {/* RiotID設定モーダル */}
+      {showRiotIdModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-2 text-orange-400">RiotIDを設定</h2>
+            <p className="text-sm text-gray-400 mb-4">例: Haru#JP1</p>
+            <input type="text" placeholder="ゲーム名#タグライン..." value={newRiotId}
+              onChange={e => setNewRiotId(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && saveRiotId()}
+              className="w-full p-2 mb-4 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-orange-400" />
+            <div className="flex gap-3">
+              <button onClick={saveRiotId} className="flex-1 p-2 bg-orange-400 text-gray-900 font-bold rounded hover:bg-orange-300">保存</button>
+              <button onClick={() => setShowRiotIdModal(false)}
+                className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
+            </div>
           </div>
         </div>
       )}
