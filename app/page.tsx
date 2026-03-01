@@ -95,6 +95,7 @@ export default function Home() {
   const [usernameError, setUsernameError] = useState('')
   const [showUserList, setShowUserList] = useState(false)
   const [userList, setUserList] = useState<{id: string, username: string}[]>([])
+  const [userListSearch, setUserListSearch] = useState('')
   const router = useRouter()
   const supabase = createClient()
 
@@ -1086,9 +1087,13 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
             <h2 className="text-xl font-bold mb-4 text-blue-400">👥 みんなのピックプール</h2>
+            <input type="text" placeholder="ユーザー名で検索..." value={userListSearch}
+              onChange={e => setUserListSearch(e.target.value)}
+              className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-blue-400" />
             <div className="grid gap-2 max-h-96 overflow-y-auto mb-4">
-              {userList.length === 0 && <p className="text-gray-500 text-center py-4">ユーザーがいません</p>}
-              {userList.map(u => (
+              {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).length === 0 && 
+                <p className="text-gray-500 text-center py-4">ユーザーが見つかりません</p>}
+              {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).map(u => (
                 <button key={u.id} onClick={() => { window.open(`/user/${u.username}`, '_blank'); setShowUserList(false) }}
                   className="flex items-center justify-between bg-gray-700 hover:bg-gray-600 p-3 rounded transition-all">
                   <span className="font-bold text-white">{u.username}</span>
@@ -1096,7 +1101,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setShowUserList(false)}
+            <button onClick={() => { setShowUserList(false); setUserListSearch('') }}
               className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
           </div>
         </div>
