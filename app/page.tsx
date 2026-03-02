@@ -547,6 +547,10 @@ export default function Home() {
                 ユーザー名を設定
               </button>
             )}
+            <button onClick={() => router.push('/match')}
+              className="px-3 py-2 bg-green-700 rounded hover:bg-green-600 text-sm font-bold">
+              ⚔️ 試合
+            </button>
             <button onClick={() => setShowUserList(true)}
               className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
               👥 みんなのプール
