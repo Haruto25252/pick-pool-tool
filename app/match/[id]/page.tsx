@@ -14,6 +14,8 @@ type MatchSession = {
   team2_picks: string[]
   team1_users: string[]
   team2_users: string[]
+  team1_lanes: Record<string, string>
+  team2_lanes: Record<string, string>
 }
 
 type PickPool = {
@@ -43,7 +45,7 @@ type Profile = {
 
 type UserPickPool = {
   username: string
-  champions: { name: string; priority: number }[]
+  champions: { name: string; priority: number; lanes: string[] }[]
 }
 
 export default function MatchDetailPage() {
@@ -64,6 +66,7 @@ export default function MatchDetailPage() {
   const [allProfiles, setAllProfiles] = useState<Profile[]>([])
   const [teamPickPools, setTeamPickPools] = useState<Record<string, UserPickPool>>({})
   const [showBanSuggest, setShowBanSuggest] = useState(false)
+  const [showLanePicker, setShowLanePicker] = useState<{team: 'team1' | 'team2', username: string} | null>(null)
 
   const allChampions = Object.keys(championMap)
 
@@ -128,11 +131,20 @@ export default function MatchDetailPage() {
     for (const username of allUsers) {
       const profile = allProfiles.find(p => p.username === username)
       if (!profile) continue
-      const { data: pool } = await supabase.from('pick_pool').select('champion_name, priority').eq('user_id', profile.id)
+      const [{ data: pool }, { data: configs }] = await Promise.all([
+        supabase.from('pick_pool').select('champion_name, priority, lane').eq('user_id', profile.id),
+        supabase.from('champion_config').select('champion_name, lanes').eq('user_id', profile.id)
+      ])
       if (pool) {
+        const configMap: Record<string, string[]> = {}
+        if (configs) configs.forEach((c: any) => { configMap[c.champion_name] = c.lanes })
         newPools[username] = {
           username,
-          champions: pool.map(p => ({ name: p.champion_name, priority: p.priority }))
+          champions: pool.map(p => ({
+            name: p.champion_name,
+            priority: p.priority,
+            lanes: p.lane || configMap[p.champion_name] || []
+          }))
         }
       }
     }
@@ -191,29 +203,44 @@ export default function MatchDetailPage() {
     return 'border-gray-500'
   }
 
+  const setUserLane = async (username: string, team: 'team1' | 'team2', lane: string) => {
+    if (!match) return
+    const key = `${team}_lanes` as 'team1_lanes' | 'team2_lanes'
+    const current = match[key] || {}
+    const newLanes = { ...current, [username]: lane }
+    setMatch({ ...match, [key]: newLanes })
+    await supabase.from('match_session').update({ [key]: newLanes }).eq('id', id)
+    setShowLanePicker(null)
+  }
+
   // BANおすすめ計算
-    const getBanSuggestions = () => {
+  const getBanSuggestions = () => {
     if (!match) return []
     const enemyTeamKey = myTeam === 'team1' ? 'team2' : 'team1'
     const enemyUsers = match[`${enemyTeamKey}_users`] || []
-    
+    const enemyLanes = match[`${enemyTeamKey}_lanes`] || {}
+
     const champScores: Record<string, number> = {}
-    
+
     for (const username of enemyUsers) {
-        const pool = teamPickPools[username]
-        if (!pool) continue
-        for (const { name, priority } of pool.champions) {
+      const pool = teamPickPools[username]
+      if (!pool) continue
+      const assignedLane = enemyLanes[username]
+
+      for (const { name, priority, lanes } of pool.champions) {
+        // レーンが設定されている場合はそのレーンのチャンピオンのみ
+        if (assignedLane && lanes.length > 0 && !lanes.includes(assignedLane)) continue
         if (!champScores[name]) champScores[name] = 0
         champScores[name] = Math.max(champScores[name], priority)
-        }
+      }
     }
-    
+
     return Object.entries(champScores)
-        .filter(([name]) => !match.bans.includes(name))
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 10)
-        .map(([name, score]) => ({ name, score }))
-    }
+      .filter(([name]) => !match.bans.includes(name))
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([name, score]) => ({ name, score }))
+  }
 
   // OP.GGマルチサーチURL生成
   const getMultiSearchUrl = (team: 'team1' | 'team2') => {
@@ -356,11 +383,16 @@ export default function MatchDetailPage() {
                 {/* メンバー表示 */}
                 {(match[`${team}_users`] || []).length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-2">
-                    {(match[`${team}_users`] || []).map(username => (
-                      <span key={username} className={`text-xs px-2 py-1 rounded ${team === 'team1' ? 'bg-blue-900 text-blue-300' : 'bg-red-900 text-red-300'}`}>
-                        👤 {username}
-                      </span>
-                    ))}
+                    {(match[`${team}_users`] || []).map(username => {
+                      const lane = (match[`${team}_lanes`] || {})[username]
+                      return (
+                        <button key={username} onClick={() => setShowLanePicker({team, username})}
+                          className={`text-xs px-2 py-1 rounded flex items-center gap-1 ${team === 'team1' ? 'bg-blue-900 text-blue-300 hover:bg-blue-800' : 'bg-red-900 text-red-300 hover:bg-red-800'}`}>
+                          👤 {username}
+                          {lane ? <span className="text-yellow-400 font-bold">{lane}</span> : <span className="text-gray-500">レーン未設定</span>}
+                        </button>
+                      )
+                    })}
                   </div>
                 )}
                 {/* ピック表示 */}
@@ -501,6 +533,30 @@ export default function MatchDetailPage() {
             </div>
             <button onClick={() => { setShowUserPicker(null); setUserSearch('') }}
               className="w-full p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">完了</button>
+          </div>
+        </div>
+      )}
+      {/* レーン選択モーダル */}
+      {showLanePicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-xs">
+            <h2 className="text-lg font-bold mb-4 text-yellow-400">
+              {showLanePicker.username} のレーンを設定
+            </h2>
+            <div className="grid gap-2">
+              {['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'].map(lane => (
+                <button key={lane} onClick={() => setUserLane(showLanePicker.username, showLanePicker.team, lane)}
+                  className="p-3 bg-gray-700 hover:bg-yellow-600 rounded font-bold transition-all">
+                  {lane}
+                </button>
+              ))}
+              <button onClick={() => setUserLane(showLanePicker.username, showLanePicker.team, '全て')}
+                className="p-3 bg-gray-600 hover:bg-gray-500 rounded text-gray-400 transition-all">
+                レーン指定なし
+              </button>
+            </div>
+            <button onClick={() => setShowLanePicker(null)}
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-3">キャンセル</button>
           </div>
         </div>
       )}
