@@ -192,36 +192,28 @@ export default function MatchDetailPage() {
   }
 
   // BANおすすめ計算
-  const getBanSuggestions = () => {
+    const getBanSuggestions = () => {
     if (!match) return []
-    const enemyTeam = myTeam === 'team1' ? 'team2' : 'team1'
-    const enemyUsers = match[`${enemyTeam}_users`] || []
+    const enemyTeamKey = myTeam === 'team1' ? 'team2' : 'team1'
+    const enemyUsers = match[`${enemyTeamKey}_users`] || []
     
     const champScores: Record<string, number> = {}
     
     for (const username of enemyUsers) {
-      const pool = teamPickPools[username]
-      if (!pool) continue
-      for (const { name, priority } of pool.champions) {
+        const pool = teamPickPools[username]
+        if (!pool) continue
+        for (const { name, priority } of pool.champions) {
         if (!champScores[name]) champScores[name] = 0
-        // 相手の優先度が高いほどBANすべき
-        champScores[name] += priority
-        // 自分が不利なチャンプはさらにスコアアップ
-        const mu = matchups[name]
-        if (mu) {
-          pickPool.forEach(p => {
-            if (mu.favorable.includes(p.champion_name)) champScores[name] += 2
-          })
+        champScores[name] = Math.max(champScores[name], priority)
         }
-      }
     }
     
     return Object.entries(champScores)
-      .filter(([name]) => !match.bans.includes(name))
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
-      .map(([name, score]) => ({ name, score }))
-  }
+        .filter(([name]) => !match.bans.includes(name))
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 10)
+        .map(([name, score]) => ({ name, score }))
+    }
 
   // OP.GGマルチサーチURL生成
   const getMultiSearchUrl = (team: 'team1' | 'team2') => {
