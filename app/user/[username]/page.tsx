@@ -63,23 +63,29 @@ export default function UserPage() {
       if (!profile) { setNotFound(true); return }
       setTargetUserId(profile.id)
 
-      const [{ data: pool }, { data: mu }, { data: configs }] = await Promise.all([
+      const [{ data: pool }, { data: mu }, { data: configs }, { data: defaultMu }, { data: defaultConfigs }] = await Promise.all([
         supabase.from('pick_pool').select('*').eq('user_id', profile.id).order('priority', { ascending: false }),
         supabase.from('matchup').select('*').eq('user_id', profile.id),
-        supabase.from('champion_config').select('*').eq('user_id', profile.id)
+        supabase.from('champion_config').select('*').eq('user_id', profile.id),
+        supabase.from('default_matchup').select('*'),
+        supabase.from('default_champion_config').select('*')
       ])
 
       if (pool) setPickPool(pool)
       if (mu) {
-        const map: Record<string, Matchup> = {}
+        const defaultMap: Record<string, Matchup> = {}
+        if (defaultMu) defaultMu.forEach((m: Matchup) => { defaultMap[m.champion_name] = m })
+        const map: Record<string, Matchup> = { ...defaultMap }
         mu.forEach((m: Matchup) => { map[m.champion_name] = m })
         setMatchups(map)
       }
       if (configs) {
-        const map: Record<string, ChampionConfig> = {}
+        const defaultMap: Record<string, ChampionConfig> = {}
+        if (defaultConfigs) defaultConfigs.forEach((c: ChampionConfig) => { defaultMap[c.champion_name] = c })
+        const map: Record<string, ChampionConfig> = { ...defaultMap }
         configs.forEach((c: ChampionConfig) => { map[c.champion_name] = c })
         setChampionConfigs(map)
-        const tags = Array.from(new Set(configs.flatMap((c: ChampionConfig) => c.tags || [])))
+        const tags = Array.from(new Set(Object.values(map).flatMap((c: ChampionConfig) => c.tags || [])))
         setUserTags(tags)
       }
       const { data: profiles } = await supabase.from('profile').select('id, username').order('username')
