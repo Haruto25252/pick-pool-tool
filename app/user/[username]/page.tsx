@@ -135,14 +135,25 @@ export default function UserPage() {
     return true
   })
 
-  const sorted = [...filtered].sort((a, b) => {
+  const sorted = Array.from(new Set([...filtered].sort((a, b) => {
     const sa = getCounterScore(a)
     const sb = getCounterScore(b)
+    const aSkill = enemyChamps.some(e => matchups[a]?.favorable.includes(e)) &&
+                  enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
+    const bSkill = enemyChamps.some(e => matchups[b]?.favorable.includes(e)) &&
+                  enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
+
+    if (enemyChamps.length > 0) {
+      const aGroup = sa > 0 ? 0 : aSkill ? 1 : sa === 0 ? 2 : 3
+      const bGroup = sb > 0 ? 0 : bSkill ? 1 : sb === 0 ? 2 : 3
+      if (aGroup !== bGroup) return aGroup - bGroup
+    }
+
     if (sb !== sa) return sb - sa
     const pa = getPickInfo(a)?.priority ?? 0
     const pb = getPickInfo(b)?.priority ?? 0
     return pb - pa
-  })
+  })))
 
   if (notFound) return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
