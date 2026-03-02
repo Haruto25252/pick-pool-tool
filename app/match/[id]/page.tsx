@@ -49,31 +49,34 @@ export default function MatchDetailPage() {
     if (data) setMatch(data)
   }
 
-  const toggleBan = async (name: string) => {
-    if (!match) return
-    const newBans = match.bans.includes(name)
-      ? match.bans.filter(n => n !== name)
-      : [...match.bans, name]
-    await supabase.from('match_session').update({ bans: newBans }).eq('id', id)
-  }
+const toggleBan = async (name: string) => {
+  if (!match) return
+  const newBans = match.bans.includes(name)
+    ? match.bans.filter(n => n !== name)
+    : [...match.bans, name]
+  setMatch({ ...match, bans: newBans })
+  await supabase.from('match_session').update({ bans: newBans }).eq('id', id)
+}
 
-  const togglePick = async (name: string) => {
-    if (!match || !myTeam) return
-    const key = myTeam === 'team1' ? 'team1_picks' : 'team2_picks'
-    const current = match[key]
-    const newPicks = current.includes(name)
-      ? current.filter(n => n !== name)
-      : [...current, name]
-    await supabase.from('match_session').update({ [key]: newPicks }).eq('id', id)
-  }
+const togglePick = async (name: string) => {
+  if (!match || !myTeam) return
+  const key = myTeam === 'team1' ? 'team1_picks' : 'team2_picks'
+  const current = match[key]
+  const newPicks = current.includes(name)
+    ? current.filter(n => n !== name)
+    : [...current, name]
+  setMatch({ ...match, [key]: newPicks })
+  await supabase.from('match_session').update({ [key]: newPicks }).eq('id', id)
+}
 
-  const toggleEnemy = async (name: string) => {
-    if (!match) return
-    const newEnemy = match.enemy_champs.includes(name)
-      ? match.enemy_champs.filter(n => n !== name)
-      : [...match.enemy_champs, name]
-    await supabase.from('match_session').update({ enemy_champs: newEnemy }).eq('id', id)
-  }
+const toggleEnemy = async (name: string) => {
+  if (!match) return
+  const newEnemy = match.enemy_champs.includes(name)
+    ? match.enemy_champs.filter(n => n !== name)
+    : [...match.enemy_champs, name]
+  setMatch({ ...match, enemy_champs: newEnemy })
+  await supabase.from('match_session').update({ enemy_champs: newEnemy }).eq('id', id)
+}
 
   const resetMatch = async () => {
     if (!confirm('試合をリセットしますか？')) return
@@ -260,4 +263,4 @@ export default function MatchDetailPage() {
       )}
     </div>
   )
-}
+}   
