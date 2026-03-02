@@ -21,14 +21,14 @@ function ConfirmContent() {
           setStatus('error')
         } else {
           setStatus('success')
-          setTimeout(() => router.push('/'), 2000)
+          setTimeout(() => router.push('/onboarding'), 2000)
         }
       } else {
         // Googleログイン後はURLのhashからセッションを取得
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           setStatus('success')
-          setTimeout(() => router.push('/'), 2000)
+          setTimeout(() => router.push('/onboarding'), 2000)
         } else {
           // 少し待ってから再確認
           setTimeout(async () => {
