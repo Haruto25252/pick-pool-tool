@@ -228,7 +228,7 @@ export default function Home() {
     const mu = matchups[name]
     if (!mu) return 0
     let score = 0
-    enemyChamps.forEach(enemy => {
+    enemyChamps.filter(e => !bannedChamps.has(e)).forEach(enemy => {
       if (mu.favorable.includes(enemy)) score += 1
       if (mu.unfavorable.includes(enemy)) score -= 1
     })
@@ -238,11 +238,13 @@ export default function Home() {
   const isDangerous = (name: string): boolean => {
     if (viewMode !== 'all') return false
     if (pickPool.length === 0) return false
+    const activeEnemies = enemyChamps.filter(e => !bannedChamps.has(e))
+    if (activeEnemies.length === 0) return false
     const hasCounter = pickPool.some(p => {
       const mu = matchups[p.champion_name]
       return mu?.favorable.includes(name)
     })
-    return !hasCounter
+    return !hasCounter  
   }
 
   const openAdd = (name: string) => {
@@ -566,11 +568,16 @@ export default function Home() {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-400 font-bold">相手チャンプ:</span>
             {enemyChamps.map(name => (
-              <button key={name} onClick={() => toggleEnemy(name)}
-                className="flex items-center gap-1 bg-red-900 border border-red-500 px-2 py-1 rounded text-sm hover:bg-red-800">
-                {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-5 h-5 rounded-full" />}
-                {name}
-                <span className="text-red-300 ml-1">×</span>
+              <button key={name} onClick={() => toggleBan(name)}
+                className={`flex items-center gap-1 px-2 py-1 rounded text-sm border transition-all
+                  ${bannedChamps.has(name)
+                    ? 'opacity-50 border-red-700 bg-red-950'
+                    : 'bg-red-900 border-red-500 hover:bg-red-800'}`}>
+                {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className={`w-5 h-5 rounded-full ${bannedChamps.has(name) ? 'grayscale' : ''}`} />}
+                <span className={bannedChamps.has(name) ? 'line-through text-red-300' : ''}>{name}</span>
+                {bannedChamps.has(name)
+                  ? <span className="text-red-300 ml-1 text-xs">BAN済</span>
+                  : <span className="text-gray-400 ml-1 text-xs">BANする</span>}
               </button>
             ))}
             <button onClick={() => setShowEnemyPicker(true)}
@@ -583,6 +590,22 @@ export default function Home() {
                 クリア
               </button>
             )}
+          </div>
+        </div>
+
+        {/* BAN欄 */}
+        <div className="bg-gray-800 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-red-400 font-bold">🚫 BAN:</span>
+            {enemyChamps.filter(n => bannedChamps.has(n)).map(name => (
+              <button key={name} onClick={() => toggleBan(name)}
+                className="flex items-center gap-1 bg-red-900 border border-red-500 px-2 py-1 rounded text-sm hover:bg-red-800 opacity-60">
+                {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-5 h-5 rounded-full grayscale" />}
+                <span className="line-through text-red-300">{name}</span>
+                <span className="text-red-300 ml-1">×</span>
+              </button>
+            ))}
+            <span className="text-xs text-gray-500">（相手チャンプ欄から選択）</span>
           </div>
         </div>
 
@@ -644,8 +667,8 @@ export default function Home() {
             const score = getCounterScore(name)
             const isCounter = score > 0
             const isDisadvantage = score < 0
-            const isSkillMatchup = enemyChamps.some(e => matchups[name]?.favorable.includes(e)) &&
-                       enemyChamps.some(e => matchups[name]?.unfavorable.includes(e))
+            const isSkillMatchup = enemyChamps.filter(e => !bannedChamps.has(e)).some(e => matchups[name]?.favorable.includes(e)) &&
+                                  enemyChamps.filter(e => !bannedChamps.has(e)).some(e => matchups[name]?.unfavorable.includes(e))
             const champTags = getChampionTags(name)
             const champLanes = getChampionLanes(name)
 
@@ -653,18 +676,13 @@ export default function Home() {
               <div key={name}
                 className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all
                   ${isBanned ? 'opacity-40 border-red-700 bg-red-950'
-                    : enemyChamps.includes(name) ? 'opacity-40 border-orange-500 bg-orange-950'
+                    : enemyChamps.includes(name) && !bannedChamps.has(name) ? 'opacity-40 border-orange-500 bg-orange-950'
                     : isSkillMatchup ? 'bg-yellow-950 border-yellow-400'
                     : isCounter ? 'bg-green-950 border-green-400'
                     : isDisadvantage ? 'bg-red-950 border-red-800'
                     : isInPool ? `bg-gray-800 ${priorityBorder(pickInfo!.priority)}`
                     : 'bg-gray-850 border-gray-700 opacity-50'}
                 `}>
-
-                <button onClick={() => toggleBan(name)}
-                  className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
-                  {isBanned ? '✕' : 'BAN'}
-                </button>
 
                 {score !== 0 && (
                   <span className={`absolute top-1 left-1 text-xs font-bold ${score > 0 ? 'text-green-400' : 'text-red-400'}`}>
