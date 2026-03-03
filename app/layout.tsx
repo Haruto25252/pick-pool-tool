@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Pick Pool Tool",
   description: "LoL Pick Pool Management Tool",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
