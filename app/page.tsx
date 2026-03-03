@@ -685,10 +685,10 @@ export default function Home() {
                     : 'bg-gray-850 border-gray-700 opacity-50'}
                 `}>
 
-                {score !== 0 && (
+                {enemyChamps.length > 0 && (
                   <button onClick={() => setShowScoreDetail(name)}
-                    className={`absolute top-1 left-1 text-xs font-bold px-1 rounded hover:bg-gray-700 transition-all ${score > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {score > 0 ? `+${score}` : score}
+                    className={`absolute top-1 left-1 text-xs font-bold px-1 rounded hover:bg-gray-700 transition-all ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
                   </button>
                 )}
 
