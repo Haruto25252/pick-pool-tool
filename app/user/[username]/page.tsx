@@ -49,6 +49,7 @@ export default function UserPage() {
   const [showUserList, setShowUserList] = useState(false)
   const [userList, setUserList] = useState<{id: string, username: string}[]>([])
   const [userListSearch, setUserListSearch] = useState('')
+  const [showScoreDetail, setShowScoreDetail] = useState<string | null>(null)
 
   const allChampions = Object.keys(championMap)
 
@@ -269,10 +270,11 @@ export default function UserPage() {
                   className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
                   {isBanned ? '✕' : 'BAN'}
                 </button>
-                {score !== 0 && (
-                  <span className={`absolute top-1 left-1 text-xs font-bold ${score > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {score > 0 ? `+${score}` : score}
-                  </span>
+                {enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 && (
+                  <button onClick={() => setShowScoreDetail(name)}
+                    className={`absolute top-1 left-1 text-xs font-bold px-1 rounded hover:bg-gray-700 transition-all ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
+                  </button>
                 )}
                 <div className="relative">
                   {iconUrl
@@ -353,6 +355,81 @@ export default function UserPage() {
           </div>
         </div>
       )}
+      {/* スコア詳細モーダル */}
+      {showScoreDetail && (() => {
+        const mu = matchups[showScoreDetail]
+        const currentScore = getCounterScore(showScoreDetail)
+        const scoreWithoutBans = (() => {
+          if (!mu) return 0
+          let s = 0
+          enemyChamps.forEach(e => {
+            if (mu.favorable.includes(e)) s += 1
+            if (mu.unfavorable.includes(e)) s -= 1
+          })
+          return s
+        })()
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+              <div className="flex items-center gap-3 mb-4">
+                {getChampionIcon(showScoreDetail) && <img src={getChampionIcon(showScoreDetail)} alt={showScoreDetail} className="w-10 h-10 rounded-full" />}
+                <div>
+                  <h2 className="text-lg font-bold text-white">{showScoreDetail}</h2>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-bold ${currentScore > 0 ? 'text-green-400' : currentScore < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                      現在: {currentScore > 0 ? `+${currentScore}` : currentScore === 0 ? '±0' : currentScore}
+                    </span>
+                    {scoreWithoutBans !== currentScore && (
+                      <span className="text-xs text-gray-400">
+                        （BAN前: {scoreWithoutBans > 0 ? `+${scoreWithoutBans}` : scoreWithoutBans}）
+                        <span className="text-yellow-400 ml-1">↑BAN効果あり</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-2 max-h-80 overflow-y-auto">
+                {enemyChamps.map(enemy => {
+                  const isFavorable = mu?.favorable.includes(enemy)
+                  const isUnfavorable = mu?.unfavorable.includes(enemy)
+                  const isSkill = isFavorable && isUnfavorable
+                  const isBanned = bannedChamps.has(enemy)
+
+                  return (
+                    <button key={enemy} onClick={() => toggleBan(enemy)}
+                      className={`flex items-center justify-between p-2 rounded border transition-all
+                        ${isBanned ? 'opacity-40 border-gray-600 bg-gray-700'
+                          : isSkill ? 'border-yellow-400 bg-yellow-950'
+                          : isFavorable ? 'border-green-400 bg-green-950'
+                          : isUnfavorable ? 'border-red-500 bg-red-950'
+                          : 'border-gray-600 bg-gray-700'}`}>
+                      <div className="flex items-center gap-2">
+                        {getChampionIcon(enemy) && <img src={getChampionIcon(enemy)} alt={enemy} className={`w-7 h-7 rounded-full ${isBanned ? 'grayscale' : ''}`} />}
+                        <span className={`text-sm font-bold ${isBanned ? 'line-through text-gray-500' : 'text-white'}`}>{enemy}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-bold
+                          ${isSkill ? 'text-yellow-400' : isFavorable ? 'text-green-400' : isUnfavorable ? 'text-red-400' : 'text-gray-500'}`}>
+                          {isSkill ? '● スキル' : isFavorable ? '▲ 有利' : isUnfavorable ? '▼ 不利' : '− ニュートラル'}
+                        </span>
+                        {!isBanned && (isUnfavorable || isSkill) && (
+                          <span className="text-xs text-red-300 bg-red-900 px-1 rounded">BANで↑</span>
+                        )}
+                        {isBanned && <span className="text-xs text-gray-500">BAN済</span>}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button onClick={() => setShowScoreDetail(null)}
+                className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
