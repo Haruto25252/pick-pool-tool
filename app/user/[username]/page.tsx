@@ -224,7 +224,7 @@ export default function UserPage() {
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-red-400 font-bold">🚫 BAN:</span>
-            {enemyChamps.filter(n => bannedChamps.has(n)).map(name => (
+            {Array.from(bannedChamps).map(name => (
               <button key={name} onClick={() => toggleBan(name)}
                 className="flex items-center gap-1 bg-red-900 border border-red-500 px-2 py-1 rounded text-sm hover:bg-red-800 opacity-60">
                 {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-5 h-5 rounded-full grayscale" />}
@@ -232,7 +232,7 @@ export default function UserPage() {
                 <span className="text-red-300 ml-1">×</span>
               </button>
             ))}
-            <span className="text-xs text-gray-500">（相手チャンプ欄から選択）</span>
+            {bannedChamps.size === 0 && <span className="text-xs text-gray-500">なし</span>}
           </div>
         </div>
 
