@@ -707,17 +707,25 @@ export default function Home() {
                   )}
                 </div>
 
-                <p className={`text-xs text-center font-bold leading-tight ${isInPool ? 'text-yellow-400' : 'text-gray-300'}`}>{name}</p>
+                <p
+                  onClick={() => window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank')}
+                  className={`text-xs text-center font-bold leading-tight cursor-pointer hover:text-yellow-300 transition-colors ${isInPool ? 'text-yellow-400' : 'text-gray-300'}`}>
+                  {name}
+                </p>
 
                 {champLanes.length > 0 && <p className="text-xs text-gray-400">{champLanes.join(' / ')}</p>}
 
-                {champTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 justify-center">
-                    {champTags.map(tag => (
-                      <span key={tag} className="text-xs bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>
-                    ))}
-                  </div>
-                )}
+                {/* タグ＋対面ボタン */}
+                <div className="flex flex-wrap gap-1 justify-center">
+                  <button onClick={() => isInPool ? openEdit(pickInfo!) : openAdd(name)}
+                    className="text-xs bg-gray-700 hover:bg-gray-600 px-1 rounded flex flex-wrap gap-1 justify-center max-w-full">
+                    {champTags.length > 0
+                      ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>)
+                      : <span className="text-gray-500">タグなし</span>}
+                  </button>
+                  <button onClick={() => openMatchup(name)}
+                    className="text-xs bg-gray-600 hover:bg-gray-500 px-1 rounded">対面</button>
+                </div>
 
                 {mu && (
                   <div className="flex gap-1 text-xs">
@@ -726,29 +734,48 @@ export default function Home() {
                   </div>
                 )}
 
+                {/* 記録・対策ビルド */}
                 <div className="flex gap-1 mt-1 flex-wrap justify-center">
-                  {isInPool
-                    ? <button onClick={() => openEdit(pickInfo)} className="text-xs bg-blue-700 hover:bg-blue-600 px-1 rounded">編集</button>
-                    : <button onClick={() => openAdd(name)} className="text-xs bg-yellow-600 hover:bg-yellow-500 px-1 rounded">追加</button>
-                  }
-                  <button onClick={() => openMatchup(name)} className="text-xs bg-gray-600 hover:bg-gray-500 px-1 rounded">対面</button>
                   {isInPool && (
-                    <button onClick={() => { setResultForm({ myChamp: name, enemyChamp: enemyChamps.length === 1 ? enemyChamps[0] : '', enemySearch: '' }); setShowResultForm(true) }}
-                      className="text-xs bg-green-700 hover:bg-green-600 px-1 rounded">記録</button>
+                    <div className="relative group">
+                      <button
+                        onClick={() => {
+                          const active = enemyChamps.filter(e => !bannedChamps.has(e))
+                          if (active.length === 0) return
+                          setResultForm({ myChamp: name, enemyChamp: active.length === 1 ? active[0] : '', enemySearch: '' })
+                          setShowResultForm(true)
+                        }}
+                        className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-green-700 hover:bg-green-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
+                        記録
+                      </button>
+                      {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                          相手チャンプを設定してください
+                        </div>
+                      )}
+                    </div>
                   )}
-                  <button onClick={() => window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank')}
-                    className="text-xs bg-orange-700 hover:bg-orange-600 px-1 rounded">OP.GG</button>
-                  {enemyChamps.length >= 1 && (
-                    <button onClick={() => {
-                      if (enemyChamps.length === 1) {
-                        window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[enemyChamps[0]]?.toLowerCase()}/build/`, '_blank')
-                      } else {
-                        setLolalyticsChamp(name)
-                        setShowLolalyticsModal(true)
-                      }
-                    }}
-                      className="text-xs bg-teal-700 hover:bg-teal-600 px-1 rounded">対面</button>
-                  )}
+                  <div className="relative group">
+                    <button
+                      onClick={() => {
+                        const active = enemyChamps.filter(e => !bannedChamps.has(e))
+                        if (active.length === 0) return
+                        if (active.length === 1) {
+                          window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[active[0]]?.toLowerCase()}/build/`, '_blank')
+                        } else {
+                          setLolalyticsChamp(name)
+                          setShowLolalyticsModal(true)
+                        }
+                      }}
+                      className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
+                      対策ビルド
+                    </button>
+                    {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                        相手チャンプを設定してください
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )
