@@ -706,6 +706,7 @@ export default function Home() {
                     <span className="absolute -top-1 -left-1 text-lg" title="このチャンプへのカウンターがピックプールにいません">⚠️</span>
                   )}
                 </div>
+
                 <p
                   onClick={() => window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank')}
                   className={`text-xs text-center font-bold leading-tight cursor-pointer hover:text-yellow-300 transition-colors ${isInPool ? 'text-yellow-400' : 'text-gray-300'}`}>
@@ -721,7 +722,7 @@ export default function Home() {
 
                 {/* タグ */}
                 <button onClick={() => isInPool ? openEdit(pickInfo!) : openAdd(name)}
-                  className="text-xs bg-gray-700 hover:bg-gray-600 px-1 rounded flex flex-wrap gap-1 justify-center max-w-full">
+                  className="text-xs px-1 rounded flex flex-wrap gap-1 justify-center max-w-full hover:bg-gray-700 transition-colors">
                   {champTags.length > 0
                     ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>)
                     : <span className="text-gray-500">タグなし</span>}
