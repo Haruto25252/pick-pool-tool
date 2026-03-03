@@ -28,8 +28,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
       {children}
-      <footer className="pb-6 flex flex-col items-center gap-2 text-gray-600">
-        <div className="flex gap-4">
+        <footer className="bg-gray-900 pb-6 flex flex-col items-center gap-2 text-gray-600">
+          <div className="flex gap-4">
           <a href="https://x.com/Harun0502" target="_blank" rel="noopener noreferrer"
             className="hover:text-gray-400 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -43,7 +43,7 @@ export default function RootLayout({
             </svg>
           </a>
         </div>
-        <p className="text-xs">VERSION v1.40</p>
+        <p className="text-xs">VERSION v1.41</p>
         <p className="text-xs">© 2026 Produced by Harun</p>
       </footer>
       </body>
