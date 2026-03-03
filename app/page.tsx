@@ -706,32 +706,33 @@ export default function Home() {
                     <span className="absolute -top-1 -left-1 text-lg" title="このチャンプへのカウンターがピックプールにいません">⚠️</span>
                   )}
                 </div>
-
                 <p
                   onClick={() => window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank')}
                   className={`text-xs text-center font-bold leading-tight cursor-pointer hover:text-yellow-300 transition-colors ${isInPool ? 'text-yellow-400' : 'text-gray-300'}`}>
                   {name}
                 </p>
 
-                {champLanes.length > 0 && <p className="text-xs text-gray-400">{champLanes.join(' / ')}</p>}
+                {champLanes.length > 0 && (
+                  <p onClick={() => isInPool ? openEdit(pickInfo!) : openAdd(name)}
+                    className="text-xs text-gray-400 cursor-pointer hover:text-gray-200 transition-colors">
+                    {champLanes.join(' / ')}
+                  </p>
+                )}
 
-                {/* タグ＋対面ボタン */}
-                <div className="flex flex-wrap gap-1 justify-center">
-                  <button onClick={() => isInPool ? openEdit(pickInfo!) : openAdd(name)}
-                    className="text-xs bg-gray-700 hover:bg-gray-600 px-1 rounded flex flex-wrap gap-1 justify-center max-w-full">
-                    {champTags.length > 0
-                      ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>)
-                      : <span className="text-gray-500">タグなし</span>}
-                  </button>
-                  <button onClick={() => openMatchup(name)}
-                    className="text-xs bg-gray-600 hover:bg-gray-500 px-1 rounded">対面</button>
-                </div>
+                {/* タグ */}
+                <button onClick={() => isInPool ? openEdit(pickInfo!) : openAdd(name)}
+                  className="text-xs bg-gray-700 hover:bg-gray-600 px-1 rounded flex flex-wrap gap-1 justify-center max-w-full">
+                  {champTags.length > 0
+                    ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>)
+                    : <span className="text-gray-500">タグなし</span>}
+                </button>
 
                 {mu && (
-                  <div className="flex gap-1 text-xs">
+                  <button onClick={() => openMatchup(name)}
+                    className="flex gap-1 text-xs hover:bg-gray-700 rounded px-1 transition-colors">
                     {mu.favorable.length > 0 && <span className="text-green-400">▲{mu.favorable.length}</span>}
                     {mu.unfavorable.length > 0 && <span className="text-red-400">▼{mu.unfavorable.length}</span>}
-                  </div>
+                  </button>
                 )}
 
                 {/* 記録・対策ビルド */}
