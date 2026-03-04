@@ -780,17 +780,17 @@ export default function Home() {
                       </div>
                     )}
 
-                {enemyChamps.length > 0 && (
-                  <div className="relative group/score">
-                    <button onClick={() => setShowScoreDetail(name)}
-                      className={`absolute top-1 left-1 text-xs font-bold px-1 rounded hover:bg-gray-700 transition-all ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                      {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
-                    </button>
-                    <div className="absolute top-6 left-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/score:opacity-100 transition-opacity z-10 pointer-events-none">
-                      設定された対面に対する詳細を表示
-                    </div>
-                  </div>
-                )}
+                    {enemyChamps.length > 0 && (
+                      <div className="relative group/score absolute top-1 left-1">
+                        <button onClick={() => setShowScoreDetail(name)}
+                          className={`text-xs font-bold px-1 rounded hover:bg-gray-700 transition-all ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                          {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
+                        </button>
+                        <div className="absolute top-full left-0 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/score:opacity-100 transition-opacity z-20 pointer-events-none">
+                          設定された対面に対する詳細を表示
+                        </div>
+                      </div>
+                    )}
 
                 {isInPool && (
                   <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
