@@ -514,14 +514,24 @@ export default function Home() {
           <div className="flex gap-2 flex-wrap justify-end">
             {riotId ? (
               <div className="flex gap-1">
-                <button onClick={() => window.open(`https://www.op.gg/summoners/jp/${encodeURIComponent(riotId.replace('#', '-'))}`, '_blank')}
-                  className="px-3 py-2 bg-orange-700 rounded-l hover:bg-orange-600 text-sm font-bold">
-                  OP.GG
-                </button>
-                <button onClick={() => { setNewRiotId(riotId); setShowRiotIdModal(true) }}
-                  className="px-2 py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm">
-                  ✏️
-                </button>
+                <div className="relative group/opgghdr">
+                  <button onClick={() => window.open(`https://www.op.gg/summoners/jp/${encodeURIComponent(riotId.replace('#', '-'))}`, '_blank')}
+                    className="px-3 py-2 bg-orange-700 rounded-l hover:bg-orange-600 text-sm font-bold">
+                    OP.GG
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opgghdr:opacity-100 transition-opacity z-20 pointer-events-none">
+                    あなたのプロフィールを開きます
+                  </div>
+                </div>
+                <div className="relative group/opggEdit">
+                  <button onClick={() => { setNewRiotId(riotId); setShowRiotIdModal(true) }}
+                    className="px-2 py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm">
+                    ✏️
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opggEdit:opacity-100 transition-opacity z-20 pointer-events-none">
+                    RiotIDを変更します
+                  </div>
+                </div>
               </div>
             ) : (
               <button onClick={() => setShowRiotIdModal(true)}
@@ -531,17 +541,27 @@ export default function Home() {
             )}
             {username ? (
               <div className="flex gap-1">
-                <button onClick={() => {
-                  navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
-                  alert('リンクをコピーしました！')
-                }}
-                  className="px-3 py-2 bg-gray-700 rounded-l hover:bg-gray-600 text-sm">
-                  🔗 {username}
-                </button>
-                <button onClick={() => { setNewUsername(username); setShowUsernameModal(true) }}
-                  className="px-2 py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm">
-                  ✏️
-                </button>
+                <div className="relative group/usernameBtn">
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
+                    alert('リンクをコピーしました！')
+                  }}
+                    className="px-3 py-2 bg-gray-700 rounded-l hover:bg-gray-600 text-sm">
+                    🔗 {username}
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameBtn:opacity-100 transition-opacity z-20 pointer-events-none">
+                    あなたのプロフィールリンクをコピーします
+                  </div>
+                </div>
+                <div className="relative group/usernameEdit">
+                  <button onClick={() => { setNewUsername(username!); setShowUsernameModal(true) }}
+                    className="px-2 py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm">
+                    ✏️
+                  </button>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameEdit:opacity-100 transition-opacity z-20 pointer-events-none">
+                    あなたのユーザー名を変更します
+                  </div>
+                </div>
               </div>
             ) : (
               <button onClick={() => setShowUsernameModal(true)}
@@ -568,6 +588,12 @@ export default function Home() {
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-400 font-bold">相手チャンプ:</span>
+            <div className="relative group/enemyHelp">
+              <span className="text-xs text-gray-500 bg-gray-700 rounded-full w-4 h-4 flex items-center justify-center cursor-default">?</span>
+              <div className="absolute bottom-full left-0 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/enemyHelp:opacity-100 transition-opacity z-20 pointer-events-none">
+                相手が使用するチャンピオンor相手の人が使用するかもしれないチャンピオン（ピックプール）を選択します
+              </div>
+            </div>
             {enemyChamps.map(name => (
               <button key={name} onClick={() => toggleBan(name)}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-sm border transition-all

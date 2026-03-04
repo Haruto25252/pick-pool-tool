@@ -54,7 +54,7 @@ export default function MatchDetailPage() {
   const supabase = createClient()
 
   const [match, setMatch] = useState<MatchSession | null>(null)
-  const [myTeam, setMyTeam] = useState<'team1' | 'team2' | null>(null)
+  const [myTeam, setMyTeam] = useState<'team1' | 'team2'>('team1')
   const [userId, setUserId] = useState<string | null>(null)
   const [showChampPicker, setShowChampPicker] = useState<'ban' | 'team1' | 'team2' | null>(null)
   const [showUserPicker, setShowUserPicker] = useState<'team1' | 'team2' | null>(null)
@@ -67,6 +67,7 @@ export default function MatchDetailPage() {
   const [teamPickPools, setTeamPickPools] = useState<Record<string, UserPickPool>>({})
   const [showBanSuggest, setShowBanSuggest] = useState(false)
   const [showLanePicker, setShowLanePicker] = useState<{team: 'team1' | 'team2', username: string} | null>(null)
+  const [showScoreDetail, setShowScoreDetail] = useState<string | null>(null)
 
   const allChampions = Object.keys(championMap)
 
@@ -260,7 +261,7 @@ export default function MatchDetailPage() {
     </div>
   )
 
-  if (!myTeam) return (
+  if (!myTeam) (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
       <div className="bg-gray-800 p-8 rounded-lg w-full max-w-sm text-center">
         <h1 className="text-xl font-bold text-yellow-400 mb-2">{match.name}</h1>
@@ -302,13 +303,10 @@ export default function MatchDetailPage() {
             <h1 className="text-xl font-bold text-yellow-400">{match.name}</h1>
             <p className="text-sm text-gray-400">{myTeam === 'team1' ? '🔵 チーム1' : '🔴 チーム2'} として参加中</p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setMyTeam(null)} className="px-3 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">チーム変更</button>
-            {userId === match.created_by && (
-              <button onClick={resetMatch} className="px-3 py-2 bg-orange-700 rounded hover:bg-orange-600 text-sm font-bold">リセット</button>
-            )}
-            <button onClick={() => router.push('/match')} className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">← 戻る</button>
-          </div>
+            <button onClick={() => setMyTeam(prev => prev === 'team1' ? 'team2' : 'team1')}
+              className="px-3 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">
+              チーム変更（現在: {myTeam === 'team1' ? '🔵チーム1' : '🔴チーム2'}）
+            </button>
         </div>
 
         {/* BAN */}
@@ -360,15 +358,27 @@ export default function MatchDetailPage() {
             return (
               <div key={team} className={`bg-gray-800 rounded-lg p-4 border-2 ${team === 'team1' ? 'border-blue-700' : 'border-red-700'}`}>
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-                  <span className={`font-bold ${team === 'team1' ? 'text-blue-400' : 'text-red-400'}`}>
-                    {team === 'team1' ? '🔵 チーム1' : '🔴 チーム2'}
-                  </span>
+                  <div className="relative group/teamLabel">
+                    <span className={`font-bold cursor-pointer ${team === 'team1' ? 'text-blue-400 hover:text-blue-300' : 'text-red-400 hover:text-red-300'}`}
+                      onClick={() => setMyTeam(team)}>
+                      {team === 'team1' ? '🔵 チーム1' : '🔴 チーム2'}
+                      {myTeam === team && <span className="text-xs ml-1 text-gray-400">（参加中）</span>}
+                    </span>
+                    <div className="absolute bottom-full left-0 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/teamLabel:opacity-100 transition-opacity z-20 pointer-events-none">
+                      {team === 'team1' ? 'チーム1に参加します' : 'チーム2に参加します'}
+                    </div>
+                  </div>
                   <div className="flex gap-1">
                     {multiSearchUrl && (
-                      <button onClick={() => window.open(multiSearchUrl, '_blank')}
-                        className="px-2 py-1 bg-orange-700 hover:bg-orange-600 rounded text-xs font-bold">
-                        OP.GG
-                      </button>
+                      <div className="relative group/multiSearch">
+                        <button onClick={() => window.open(multiSearchUrl, '_blank')}
+                          className="px-2 py-1 bg-orange-700 hover:bg-orange-600 rounded text-xs font-bold">
+                          OP.GG
+                        </button>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/multiSearch:opacity-100 transition-opacity z-20 pointer-events-none">
+                          このチームのOP.GGマルチサーチを作成します
+                        </div>
+                      </div>
                     )}
                     <button onClick={() => setShowUserPicker(team)}
                       className={`px-2 py-1 rounded text-xs ${team === 'team1' ? 'bg-blue-700 hover:bg-blue-600' : 'bg-red-700 hover:bg-red-600'}`}>
@@ -411,7 +421,7 @@ export default function MatchDetailPage() {
             )
           })}
         </div>
-
+        
         {/* ピックプール */}
         <div className="bg-gray-800 rounded-lg p-4">
           <h2 className="font-bold text-yellow-400 mb-3">
@@ -438,10 +448,11 @@ export default function MatchDetailPage() {
                       : score < 0 ? 'bg-red-950 border-red-800'
                       : `bg-gray-800 ${priorityBorder(pickInfo?.priority ?? 0)}`}
                   `}>
-                  {score !== 0 && !isBanned && !isPicked && (
-                    <span className={`absolute top-1 left-1 text-xs font-bold ${score > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {score > 0 ? `+${score}` : score}
-                    </span>
+                  {enemyChamps.length > 0 && (
+                    <button onClick={() => setShowScoreDetail(name)}
+                      className={`absolute top-1 left-1 text-xs font-bold px-1 rounded hover:bg-gray-700 transition-all ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                      {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
+                    </button>
                   )}
                   {getChampionIcon(name)
                     ? <img src={getChampionIcon(name)} alt={name} className="w-10 h-10 rounded-full" />
@@ -560,6 +571,59 @@ export default function MatchDetailPage() {
           </div>
         </div>
       )}
+      {showScoreDetail && (() => {
+      const mu = matchups[showScoreDetail]
+      const currentScore = getCounterScore(showScoreDetail, enemyChamps)
+      const scoreWithoutBans = (() => {
+        if (!mu) return 0
+        let s = 0
+        enemyChamps.forEach(e => {
+          if (mu.favorable.includes(e)) s += 1
+          if (mu.unfavorable.includes(e)) s -= 1
+        })
+        return s
+      })()
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+            <div className="flex items-center gap-3 mb-4">
+              {getChampionIcon(showScoreDetail) && <img src={getChampionIcon(showScoreDetail)} alt={showScoreDetail} className="w-10 h-10 rounded-full" />}
+              <div>
+                <h2 className="text-lg font-bold text-white">{showScoreDetail}</h2>
+                <span className={`text-sm font-bold ${currentScore > 0 ? 'text-green-400' : currentScore < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                  現在: {currentScore > 0 ? `+${currentScore}` : currentScore === 0 ? '±0' : currentScore}
+                </span>
+              </div>
+            </div>
+            <div className="grid gap-2 max-h-80 overflow-y-auto">
+              {enemyChamps.map(enemy => {
+                const isFavorable = mu?.favorable.includes(enemy)
+                const isUnfavorable = mu?.unfavorable.includes(enemy)
+                const isSkill = isFavorable && isUnfavorable
+                return (
+                  <div key={enemy} className={`flex items-center justify-between p-2 rounded border
+                    ${isSkill ? 'border-yellow-400 bg-yellow-950'
+                      : isFavorable ? 'border-green-400 bg-green-950'
+                      : isUnfavorable ? 'border-red-500 bg-red-950'
+                      : 'border-gray-600 bg-gray-700'}`}>
+                    <div className="flex items-center gap-2">
+                      {getChampionIcon(enemy) && <img src={getChampionIcon(enemy)} alt={enemy} className="w-7 h-7 rounded-full" />}
+                      <span className="text-sm font-bold text-white">{enemy}</span>
+                    </div>
+                    <span className={`text-xs font-bold ${isSkill ? 'text-yellow-400' : isFavorable ? 'text-green-400' : isUnfavorable ? 'text-red-400' : 'text-gray-500'}`}>
+                      {isSkill ? '● スキル' : isFavorable ? '▲ 有利' : isUnfavorable ? '▼ 不利' : '− ニュートラル'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+            <button onClick={() => setShowScoreDetail(null)}
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
+          </div>
+        </div>
+      )
+    })()}
     </div>
   )
 }
