@@ -178,3 +178,26 @@ export function getChampionIcon(japaneseName: string): string {
   if (!englishName) return ''
   return `https://ddragon.leagueoflegends.com/cdn/16.4.1/img/champion/${englishName}.png`
 }
+
+// 英語名→チャンピオンIDのマップ（Data Dragonから取得）
+let championIdMap: Record<string, number> | null = null
+
+export async function getChampionIdMap(): Promise<Record<string, number>> {
+  if (championIdMap) return championIdMap
+  const res = await fetch('https://ddragon.leagueoflegends.com/cdn/16.4.1/data/ja_JP/champion.json')
+  const data = await res.json()
+  const map: Record<string, number> = {}
+  Object.values(data.data).forEach((champ: any) => {
+    map[champ.id] = parseInt(champ.key)
+  })
+  championIdMap = map
+  return map
+}
+
+// 日本語名→チャンピオンID
+export async function getChampionId(japaneseName: string): Promise<number | null> {
+  const englishName = championMap[japaneseName]
+  if (!englishName) return null
+  const idMap = await getChampionIdMap()
+  return idMap[englishName] ?? null
+}

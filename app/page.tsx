@@ -63,7 +63,6 @@ export default function Home() {
   const [enemyChamps, setEnemyChamps] = useState<string[]>([])
   const [enemySearch, setEnemySearch] = useState('')
   const [showEnemyPicker, setShowEnemyPicker] = useState(false)
-  const [viewMode, setViewMode] = useState<'pool' | 'all'>('pool')
   const [showForm, setShowForm] = useState(false)
   const [editingChamp, setEditingChamp] = useState<PickPool | null>(null)
   const [selectedChamp, setSelectedChamp] = useState<string | null>(null)
@@ -102,6 +101,8 @@ export default function Home() {
   const [newRiotId, setNewRiotId] = useState('')
   const [showRiotIdModal, setShowRiotIdModal] = useState(false)
   const [showScoreDetail, setShowScoreDetail] = useState<string | null>(null)
+  const [masteryData, setMasteryData] = useState<Record<string, number>>({})
+  const [viewMode, setViewMode] = useState<'pool' | 'all' | 'mastery'>('pool')
   const router = useRouter()
   const supabase = createClient()
 
@@ -165,6 +166,21 @@ export default function Home() {
       setRiotId(profileData.riot_id)
     }
     if (allProfiles) setUserList(allProfiles)
+  }
+
+  const fetchMastery = async () => {
+    if (!riotId) {
+      alert('RiotIDを設定してください')
+      return
+    }
+    const res = await fetch(`/api/mastery?riotId=${encodeURIComponent(riotId)}`)
+    const data = await res.json()
+    if (data.error) {
+      alert('マスタリー取得に失敗しました: ' + data.error)
+      return
+    }
+    setMasteryData(data.mastery)
+    setViewMode('mastery')
   }
 
   const saveRiotId = async () => {
@@ -454,6 +470,8 @@ export default function Home() {
 
   const displayChampions = viewMode === 'pool'
     ? pickPool.map(p => p.champion_name)
+    : viewMode === 'mastery'
+    ? Object.keys(masteryData)
     : allChampions
 
   const uniqueDisplayChampions = Array.from(new Set(displayChampions))
@@ -479,6 +497,10 @@ export default function Home() {
                    enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
     const bSkill = enemyChamps.some(e => matchups[b]?.favorable.includes(e)) &&
                    enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
+                   
+    if (viewMode === 'mastery') {
+      return (masteryData[b] ?? 0) - (masteryData[a] ?? 0)
+    }
 
     if (viewMode === 'all') {
       // 全チャンプモード：カウンタースコア純粋に並べる
@@ -646,6 +668,10 @@ export default function Home() {
             <button onClick={() => setViewMode('all')}
               className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'all' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
               全チャンプ
+            </button>
+            <button onClick={fetchMastery}
+              className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
+              マスタリー順
             </button>
             <div className="ml-auto flex gap-2">
               <button onClick={() => setShowTagManager(true)}
