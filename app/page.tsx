@@ -886,11 +886,9 @@ export default function Home() {
                         className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-green-700 hover:bg-green-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
                         記録
                       </button>
-                      {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/record:opacity-100 transition-opacity z-10 pointer-events-none">
-                          相手チャンプを設定してください
-                        </div>
-                      )}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/record:opacity-100 transition-opacity z-10 pointer-events-none">
+                        {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? '相手チャンプを設定してください' : '戦績を入力します'}
+                      </div>
                     </div>
                   )}
                   {isInPool && (
@@ -909,11 +907,9 @@ export default function Home() {
                         className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
                         対策ビルド
                       </button>
-                      {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/build:opacity-100 transition-opacity z-10 pointer-events-none">
-                          相手チャンプを設定してください
-                        </div>
-                      )}
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/build:opacity-100 transition-opacity z-10 pointer-events-none">
+                        {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? '相手チャンプを設定してください' : 'LolalyticsでVSページに飛ぶ'}
+                      </div>
                     </div>
                   )}
                 </div>
