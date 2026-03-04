@@ -790,7 +790,7 @@ export default function Home() {
                       {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
                     </button>
                     <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/score:opacity-100 transition-opacity z-20 pointer-events-none">
-                      {isInPool ? '設定された対面に対する詳細を表示' : 'ピックプールに追加してください'}
+                      {isInPool ? '設定された対面に対する詳細を表示' : ''}
                     </div>
                   </div>
                 )}
