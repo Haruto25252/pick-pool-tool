@@ -721,7 +721,7 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="relative group flex items-center gap-1 justify-center">
+                <div className="relative group/opgg flex items-center gap-1 justify-center">
                   <p
                     onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
                     className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
@@ -735,27 +735,27 @@ export default function Home() {
                     </svg>
                   )}
                   {isInPool && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opgg:opacity-100 transition-opacity z-10 pointer-events-none">
                       このチャンピオンをOP.GGで確認する
                     </div> 
                   )}
                 </div>
 
                 {champLanes.length > 0 && (
-                  <div className="relative group">
+                  <div className="relative group/lane">
                     <p onClick={() => isInPool ? openEdit(pickInfo!) : undefined}
                       className={`text-xs text-gray-400 transition-colors ${isInPool ? 'cursor-pointer hover:text-gray-200' : ''}`}>
                       {champLanes.join(' / ')}
                     </p>
                     {isInPool && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/lane:opacity-100 transition-opacity z-10 pointer-events-none">
                         このチャンピオンのロール・タグを編集します
                       </div>
                     )}
                   </div>
                 )}
 
-                <div className="relative group">
+                <div className="relative group/tag">
                   <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openEdit(pickInfo!) }}
                     className={`text-xs px-1 rounded flex flex-wrap gap-1 justify-center max-w-full transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
                     {champTags.length > 0
@@ -763,13 +763,13 @@ export default function Home() {
                       : <span className="text-gray-500">タグなし</span>}
                   </button>
                   {isInPool && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/tag:opacity-100 transition-opacity z-10 pointer-events-none">
                       このチャンピオンのロール・タグを編集します
                     </div>
                   )}
                 </div>
 
-                <div className="relative group">
+                <div className="relative group/matchup">
                   <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openMatchup(name) }}
                     className={`flex gap-1 text-xs rounded px-1 transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
                     {mu?.favorable.length > 0
@@ -780,7 +780,7 @@ export default function Home() {
                       : <span className="text-red-400 opacity-30">▼0</span>}
                   </button>
                   {isInPool && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/matchup:opacity-100 transition-opacity z-10 pointer-events-none">
                       このチャンピオンの対面を設定します
                     </div>
                   )}
@@ -789,7 +789,7 @@ export default function Home() {
                 {/* 記録・対策ビルド */}
                 <div className="flex gap-1 mt-1 flex-wrap justify-center">
                   {isInPool && (
-                    <div className="relative group">
+                    <div className="relative group/record">
                       <button
                         onClick={() => {
                           const active = enemyChamps.filter(e => !bannedChamps.has(e))
@@ -801,13 +801,13 @@ export default function Home() {
                         記録
                       </button>
                       {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/record:opacity-100 transition-opacity z-10 pointer-events-none">
                           相手チャンプを設定してください
                         </div>
                       )}
                     </div>
                   )}
-                  <div className="relative group">
+                  <div className="relative group/build">
                     <button
                       onClick={() => {
                         const active = enemyChamps.filter(e => !bannedChamps.has(e))
@@ -823,7 +823,7 @@ export default function Home() {
                       対策ビルド
                     </button>
                     {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/build:opacity-100 transition-opacity z-10 pointer-events-none">
                         相手チャンプを設定してください
                       </div>
                     )}
