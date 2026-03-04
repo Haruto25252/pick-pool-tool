@@ -868,6 +868,9 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+                {viewMode === 'mastery' && masteryData[name] && (
+                  <p className="text-xs text-gray-500">{(masteryData[name] / 10000).toFixed(0)}万pts</p>
+                )}
 
                 {/* 記録・対策ビルド */}
                 <div className="flex gap-1 mt-1 flex-wrap justify-center">
