@@ -769,7 +769,7 @@ export default function Home() {
                       : isCounter ? 'bg-green-950 border-green-400'
                       : isDisadvantage ? 'bg-red-950 border-red-800'
                       : isInPool ? `bg-gray-800 ${priorityBorder(pickInfo!.priority)}`
-                      : 'bg-gray-800 border-gray-600'
+                      : 'bg-gray-800 border-gray-600 opacity-60'
                     }
                   `}>
                     {/* ピックプール未追加時のホバーメッセージ */}
