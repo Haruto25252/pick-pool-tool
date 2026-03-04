@@ -170,7 +170,7 @@ export default function Home() {
 
   const fetchMastery = async () => {
     if (!riotId) {
-      alert('RiotIDを設定してください')
+      setShowRiotIdModal(true)
       return
     }
     const res = await fetch(`/api/mastery?riotId=${encodeURIComponent(riotId)}`)
@@ -497,7 +497,7 @@ export default function Home() {
                    enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
     const bSkill = enemyChamps.some(e => matchups[b]?.favorable.includes(e)) &&
                    enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
-                   
+
     if (viewMode === 'mastery') {
       return (masteryData[b] ?? 0) - (masteryData[a] ?? 0)
     }
@@ -669,10 +669,17 @@ export default function Home() {
               className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'all' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
               全チャンプ
             </button>
-            <button onClick={fetchMastery}
-              className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-              マスタリー順
-            </button>
+            <div className="relative group/mastery">
+              <button onClick={fetchMastery}
+                className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                マスタリー順
+              </button>
+              {!riotId && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/mastery:opacity-100 transition-opacity z-20 pointer-events-none">
+                  RiotIDを設定してください
+                </div>
+              )}
+            </div>
             <div className="ml-auto flex gap-2">
               <button onClick={() => setShowTagManager(true)}
                 className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
