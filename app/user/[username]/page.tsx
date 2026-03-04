@@ -50,6 +50,9 @@ export default function UserPage() {
   const [userList, setUserList] = useState<{id: string, username: string}[]>([])
   const [userListSearch, setUserListSearch] = useState('')
   const [showScoreDetail, setShowScoreDetail] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'pool' | 'mastery'>('pool')
+  const [masteryData, setMasteryData] = useState<Record<string, number>>({})
+  const [targetRiotId, setTargetRiotId] = useState<string | null>(null)
 
   const allChampions = Object.keys(championMap)
 
@@ -57,12 +60,13 @@ export default function UserPage() {
     const init = async () => {
       const { data: profile } = await supabase
         .from('profile')
-        .select('id')
+        .select('id, riot_id')
         .eq('username', decodeURIComponent(username))
         .single()
 
       if (!profile) { setNotFound(true); return }
       setTargetUserId(profile.id)
+      if (profile.riot_id) setTargetRiotId(profile.riot_id)
 
       const [{ data: pool }, { data: mu }, { data: configs }, { data: defaultMu }, { data: defaultConfigs }] = await Promise.all([
         supabase.from('pick_pool').select('*').eq('user_id', profile.id).order('priority', { ascending: false }),
@@ -103,6 +107,21 @@ export default function UserPage() {
     return championConfigs[name]?.lanes || []
   }
 
+  const fetchMastery = async () => {
+    if (!targetRiotId) {
+      alert('このユーザーはRiotIDを設定していません')
+      return
+    }
+    const res = await fetch(`/api/mastery?riotId=${encodeURIComponent(targetRiotId)}`)
+    const data = await res.json()
+    if (data.error) {
+      alert('マスタリー取得に失敗しました: ' + data.error)
+      return
+    }
+    setMasteryData(data.mastery)
+    setViewMode('mastery')
+  }
+
   const getCounterScore = (name: string): number => {
     if (enemyChamps.length === 0) return 0
     const mu = matchups[name]
@@ -135,7 +154,12 @@ export default function UserPage() {
 
   const allTags = [...TAGS, ...userTags.filter(t => !TAGS.includes(t))]
 
-　const filtered = Array.from(new Set(pickPool.map(p => p.champion_name))).filter(name => {    if (search !== '' && !name.includes(search)) return false
+  const baseChampions = viewMode === 'mastery'
+    ? Object.keys(masteryData)
+    : Array.from(new Set(pickPool.map(p => p.champion_name)))
+
+  const filtered = baseChampions.filter(name => {
+    if (search !== '' && !name.includes(search)) return false
     const lanes = getChampionLanes(name)
     if (lane !== '全て' && lanes.length > 0 && !lanes.includes(lane)) return false
     if (selectedTag !== '全て' && !getChampionTags(name).includes(selectedTag)) return false
@@ -143,6 +167,9 @@ export default function UserPage() {
   })
 
   const sorted = Array.from(new Set([...filtered].sort((a, b) => {
+    if (viewMode === 'mastery') {
+      return (masteryData[b] ?? 0) - (masteryData[a] ?? 0)
+    }
     const sa = getCounterScore(a)
     const sb = getCounterScore(b)
     const aSkill = enemyChamps.some(e => matchups[a]?.favorable.includes(e)) &&
@@ -236,6 +263,17 @@ export default function UserPage() {
           </div>
         </div>
 
+        {/* モード切り替え */}
+        <div className="flex gap-2 mb-3">
+          <button onClick={() => setViewMode('pool')}
+            className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
+            ピックプール
+          </button>
+          <button onClick={fetchMastery}
+            className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
+            マスタリー順
+          </button>
+        </div>
         {/* フィルター */}
         <div className="mb-4">
           <input type="text" placeholder="チャンピオン名で検索..."
@@ -318,6 +356,9 @@ export default function UserPage() {
                     {mu.favorable.length > 0 && <span className="text-green-400">▲{mu.favorable.length}</span>}
                     {mu.unfavorable.length > 0 && <span className="text-red-400">▼{mu.unfavorable.length}</span>}
                   </div>
+                )}
+                {viewMode === 'mastery' && masteryData[name] && (
+                  <p className="text-xs text-gray-500">{(masteryData[name] / 10000).toFixed(0)}万pts</p>
                 )}
               </div>
             )
