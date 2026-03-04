@@ -32,9 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}>
       {children}
         <footer className="bg-gray-900 pb-6 flex flex-col items-center gap-2 text-gray-600">
           <div className="flex gap-4">
@@ -51,7 +49,7 @@ export default function RootLayout({
             </svg>
           </a>
         </div>
-        <p className="text-xs">VERSION v1.66</p>
+        <p className="text-xs">VERSION v1.69</p>
         <p className="text-xs">© 2026 Produced by Harun</p>
       </footer>
       </body>
