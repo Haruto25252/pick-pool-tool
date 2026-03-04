@@ -280,8 +280,7 @@ export default function MatchDetailPage() {
   const allPicked = [...match.team1_picks, ...match.team2_picks, ...match.bans]
   const banSuggestions = getBanSuggestions()
 
-  const sortedPool = [...pickPool.map(p => p.champion_name)].sort((a, b) => {
-    const sa = getCounterScore(a, enemyChamps)
+  const sortedPool = Array.from(new Set(pickPool.map(p => p.champion_name))).sort((a, b) => {    const sa = getCounterScore(a, enemyChamps)
     const sb = getCounterScore(b, enemyChamps)
     const aSkill = enemyChamps.some(e => matchups[a]?.favorable.includes(e)) && enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
     const bSkill = enemyChamps.some(e => matchups[b]?.favorable.includes(e)) && enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
@@ -303,10 +302,22 @@ export default function MatchDetailPage() {
             <h1 className="text-xl font-bold text-yellow-400">{match.name}</h1>
             <p className="text-sm text-gray-400">{myTeam === 'team1' ? '🔵 チーム1' : '🔴 チーム2'} として参加中</p>
           </div>
+          <div className="flex gap-2 flex-wrap">
             <button onClick={() => setMyTeam(prev => prev === 'team1' ? 'team2' : 'team1')}
               className="px-3 py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">
               チーム変更（現在: {myTeam === 'team1' ? '🔵チーム1' : '🔴チーム2'}）
             </button>
+            {userId === match.created_by && (
+              <button onClick={resetMatch}
+                className="px-3 py-2 bg-orange-600 rounded hover:bg-orange-500 text-sm font-bold">
+                リセット
+              </button>
+            )}
+            <button onClick={() => router.push('/match')}
+              className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
+              ← 戻る
+            </button>
+          </div>
         </div>
 
         {/* BAN */}
@@ -421,7 +432,7 @@ export default function MatchDetailPage() {
             )
           })}
         </div>
-        
+
         {/* ピックプール */}
         <div className="bg-gray-800 rounded-lg p-4">
           <h2 className="font-bold text-yellow-400 mb-3">
