@@ -683,11 +683,18 @@ export default function Home() {
             const champLanes = getChampionLanes(name)
 
             return (
-            <div key={name}
-              onClick={() => !isInPool ? openAdd(name) : undefined}
-              className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all group
-                ${!isInPool ? 'cursor-pointer' : ''}
-                ...`}>
+                <div key={name}
+                  onClick={() => !isInPool ? openAdd(name) : undefined}
+                  className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all group
+                    ${!isInPool ? 'cursor-pointer' : ''}
+                    ${isBanned ? 'opacity-40 border-red-700 bg-red-950'
+                      : enemyChamps.includes(name) && !bannedChamps.has(name) ? 'opacity-40 border-orange-500 bg-orange-950'
+                      : isSkillMatchup ? 'bg-yellow-950 border-yellow-400'
+                      : isCounter ? 'bg-green-950 border-green-400'
+                      : isDisadvantage ? 'bg-red-950 border-red-800'
+                      : isInPool ? `bg-gray-800 ${priorityBorder(pickInfo!.priority)}`
+                      : 'bg-gray-850 border-gray-700 opacity-50'}
+                  `}>
                     {/* ピックプール未追加時のホバーメッセージ */}
                     {!isInPool && (
                       <div className="absolute inset-0 flex items-end justify-center pb-1 pointer-events-none rounded-lg z-10">
