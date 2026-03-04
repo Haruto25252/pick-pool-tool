@@ -615,7 +615,7 @@ export default function Home() {
           <div className="flex gap-2 mb-3 items-center flex-wrap">
             <button onClick={() => setViewMode('pool')}
               className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-              ピックプール
+              マイピックプール
             </button>
             <button onClick={() => setViewMode('all')}
               className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'all' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
@@ -659,6 +659,15 @@ export default function Home() {
 
         {/* チャンピオン一覧 */}
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+          {viewMode === 'pool' && sorted.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+              <p className="text-gray-500 text-lg mb-2">あなたのピックプールがありません</p>
+              <p className="text-gray-600 text-sm">
+                <button onClick={() => setViewMode('all')} className="text-yellow-400 hover:text-yellow-300 underline">全チャンプ</button>
+                でチャンピオンを追加してください
+              </p>
+            </div>
+          )}
           {sorted.map(name => {
             const pickInfo = getPickInfo(name)
             const isBanned = bannedChamps.has(name)
@@ -675,7 +684,9 @@ export default function Home() {
 
             return (
               <div key={name}
+                onClick={() => !isInPool ? openAdd(name) : undefined}
                 className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all
+                  ${!isInPool ? 'cursor-pointer' : ''}
                   ${isBanned ? 'opacity-40 border-red-700 bg-red-950'
                     : enemyChamps.includes(name) && !bannedChamps.has(name) ? 'opacity-40 border-orange-500 bg-orange-950'
                     : isSkillMatchup ? 'bg-yellow-950 border-yellow-400'
@@ -707,34 +718,66 @@ export default function Home() {
                   )}
                 </div>
 
-                <p
-                  onClick={() => window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank')}
-                  className={`text-xs text-center font-bold leading-tight cursor-pointer hover:text-yellow-300 transition-colors ${isInPool ? 'text-yellow-400' : 'text-gray-300'}`}>
-                  {name}
-                </p>
+                <div className="relative group flex items-center gap-1 justify-center">
+                  <p
+                    onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                    className={`text-xs text-center font-bold leading-tight cursor-pointer hover:text-yellow-300 transition-colors ${isInPool ? 'text-yellow-400' : 'text-gray-300'}`}>
+                    {name}
+                  </p>
+                  <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                    xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                    className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
+                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                  </svg>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                    このチャンピオンをOP.GGで確認する
+                  </div>
+                </div>
 
                 {champLanes.length > 0 && (
-                  <p onClick={() => isInPool ? openEdit(pickInfo!) : openAdd(name)}
-                    className="text-xs text-gray-400 cursor-pointer hover:text-gray-200 transition-colors">
-                    {champLanes.join(' / ')}
-                  </p>
+                  <div className="relative group">
+                    <p onClick={() => isInPool ? openEdit(pickInfo!) : undefined}
+                      className={`text-xs text-gray-400 transition-colors ${isInPool ? 'cursor-pointer hover:text-gray-200' : ''}`}>
+                      {champLanes.join(' / ')}
+                    </p>
+                    {isInPool && (
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                        このチャンピオンのロール・タグを編集します
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                {/* タグ */}
-                <button onClick={() => isInPool ? openEdit(pickInfo!) : openAdd(name)}
-                  className="text-xs px-1 rounded flex flex-wrap gap-1 justify-center max-w-full hover:bg-gray-700 transition-colors">
-                  {champTags.length > 0
-                    ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>)
-                    : <span className="text-gray-500">タグなし</span>}
-                </button>
-
-                {mu && (
-                  <button onClick={() => openMatchup(name)}
-                    className="flex gap-1 text-xs hover:bg-gray-700 rounded px-1 transition-colors">
-                    {mu.favorable.length > 0 && <span className="text-green-400">▲{mu.favorable.length}</span>}
-                    {mu.unfavorable.length > 0 && <span className="text-red-400">▼{mu.unfavorable.length}</span>}
+                <div className="relative group">
+                  <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openEdit(pickInfo!) }}
+                    className={`text-xs px-1 rounded flex flex-wrap gap-1 justify-center max-w-full transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
+                    {champTags.length > 0
+                      ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>)
+                      : <span className="text-gray-500">タグなし</span>}
                   </button>
-                )}
+                  {isInPool && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      このチャンピオンのロール・タグを編集します
+                    </div>
+                  )}
+                </div>
+
+                <div className="relative group">
+                  <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openMatchup(name) }}
+                    className={`flex gap-1 text-xs rounded px-1 transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
+                    {mu?.favorable.length > 0
+                      ? <span className="text-green-400">▲{mu.favorable.length}</span>
+                      : <span className="text-green-400 opacity-30">▲0</span>}
+                    {mu?.unfavorable.length > 0
+                      ? <span className="text-red-400">▼{mu.unfavorable.length}</span>
+                      : <span className="text-red-400 opacity-30">▼0</span>}
+                  </button>
+                  {isInPool && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      このチャンピオンの対面を設定します
+                    </div>
+                  )}
+                </div>
 
                 {/* 記録・対策ビルド */}
                 <div className="flex gap-1 mt-1 flex-wrap justify-center">
@@ -890,7 +933,15 @@ export default function Home() {
               </div>
             </div>
             <div className="mb-3">
-              <p className="text-sm text-gray-400 mb-1">優先度: {form.priority}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm text-gray-400">あなたのチャンピオン理解度: {form.priority}</p>
+                <div className="relative group">
+                  <span className="text-xs text-gray-500 bg-gray-700 rounded-full w-4 h-4 flex items-center justify-center cursor-default">?</span>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                    理解度が高ければ高いほどカウンターピックを表示する際、優先的に並び替えます
+                  </div>
+                </div>
+              </div>
               <input type="range" min="1" max="5" value={form.priority}
                 onChange={e => setForm({ ...form, priority: Number(e.target.value) })}
                 className="w-full" />
