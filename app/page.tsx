@@ -695,6 +695,14 @@ export default function Home() {
                     : isInPool ? `bg-gray-800 ${priorityBorder(pickInfo!.priority)}`
                     : 'bg-gray-850 border-gray-700 opacity-50'}
                 `}>
+                    {/* ピックプール未追加時のホバーメッセージ */}
+                    {!isInPool && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover/card:bg-opacity-40 transition-all rounded-lg pointer-events-none z-10">
+                        <span className="text-white text-xs font-bold opacity-0 group-hover/card:opacity-100 transition-opacity text-center px-1">
+                          このチャンピオンをピックプールに加える
+                        </span>
+                      </div>
+                    )}
 
                 {enemyChamps.length > 0 && (
                   <button onClick={() => setShowScoreDetail(name)}
@@ -703,10 +711,12 @@ export default function Home() {
                   </button>
                 )}
 
-                <button onClick={() => toggleBan(name)}
-                  className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
-                  {isBanned ? '✕' : 'BAN'}
-                </button>
+                {isInPool && (
+                  <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
+                    className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
+                    {isBanned ? '✕' : 'BAN'}
+                  </button>
+                )}
 
                 <div className="relative">
                   {iconUrl
@@ -720,18 +730,22 @@ export default function Home() {
 
                 <div className="relative group flex items-center gap-1 justify-center">
                   <p
-                    onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
-                    className={`text-xs text-center font-bold leading-tight cursor-pointer hover:text-yellow-300 transition-colors ${isInPool ? 'text-yellow-400' : 'text-gray-300'}`}>
+                    onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                    className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
                     {name}
                   </p>
-                  <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
-                    xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                    className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
-                    <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
-                  </svg>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                    このチャンピオンをOP.GGで確認する
-                  </div>
+                  {isInPool && (
+                    <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                      xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                      className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
+                      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                    </svg>
+                  )}
+                  {isInPool && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+                      このチャンピオンをOP.GGで確認する
+                    </div> 
+                  )}
                 </div>
 
                 {champLanes.length > 0 && (
