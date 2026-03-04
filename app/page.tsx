@@ -697,9 +697,9 @@ export default function Home() {
                 `}>
                     {/* ピックプール未追加時のホバーメッセージ */}
                     {!isInPool && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 group-hover/card:bg-opacity-40 transition-all rounded-lg pointer-events-none z-10">
-                        <span className="text-white text-xs font-bold opacity-0 group-hover/card:opacity-100 transition-opacity text-center px-1">
-                          このチャンピオンをピックプールに加える
+                      <div className="absolute inset-0 flex items-end justify-center pb-1 pointer-events-none rounded-lg z-10">
+                        <span className="text-white text-xs font-bold opacity-0 group-hover/card:opacity-100 transition-opacity text-center px-1 bg-black bg-opacity-70 rounded">
+                          + ピックプールに加える
                         </span>
                       </div>
                     )}
