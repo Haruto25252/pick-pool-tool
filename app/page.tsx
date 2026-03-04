@@ -978,7 +978,7 @@ export default function Home() {
                 <div className="relative group">
                   <span className="text-xs text-gray-500 bg-gray-700 rounded-full w-4 h-4 flex items-center justify-center cursor-default">?</span>
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                    理解度が高ければ高いほどカウンターピックを表示する際、優先的に並び替えます
+                    理解度が高ければ高いほどカウンターピックで表示する際に、優先的に並べられます
                   </div>
                 </div>
               </div>
@@ -1290,7 +1290,7 @@ export default function Home() {
               {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).length === 0 && 
                 <p className="text-gray-500 text-center py-4">ユーザーが見つかりません</p>}
               {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).map(u => (
-                <button key={u.id} onClick={() => { window.open(`/user/${u.username}`, '_blank'); setShowUserList(false) }}
+                <button key={u.id} onClick={() => { router.push(`/user/${u.username}`); setShowUserList(false) }}
                   className="flex items-center justify-between bg-gray-700 hover:bg-gray-600 p-3 rounded transition-all">
                   <span className="font-bold text-white">{u.username}</span>
                   <span className="text-gray-400 text-sm">閲覧 →</span>
