@@ -893,27 +893,29 @@ export default function Home() {
                       )}
                     </div>
                   )}
-                  <div className="relative group/build">
-                    <button
-                      onClick={() => {
-                        const active = enemyChamps.filter(e => !bannedChamps.has(e))
-                        if (active.length === 0) return
-                        if (active.length === 1) {
-                          window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[active[0]]?.toLowerCase()}/build/`, '_blank')
-                        } else {
-                          setLolalyticsChamp(name)
-                          setShowLolalyticsModal(true)
-                        }
-                      }}
-                      className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
-                      対策ビルド
-                    </button>
-                    {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/build:opacity-100 transition-opacity z-10 pointer-events-none">
-                        相手チャンプを設定してください
-                      </div>
-                    )}
-                  </div>
+                  {isInPool && (
+                    <div className="relative group/build">
+                      <button
+                        onClick={() => {
+                          const active = enemyChamps.filter(e => !bannedChamps.has(e))
+                          if (active.length === 0) return
+                          if (active.length === 1) {
+                            window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[active[0]]?.toLowerCase()}/build/`, '_blank')
+                          } else {
+                            setLolalyticsChamp(name)
+                            setShowLolalyticsModal(true)
+                          }
+                        }}
+                        className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
+                        対策ビルド
+                      </button>
+                      {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 && (
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/build:opacity-100 transition-opacity z-10 pointer-events-none">
+                          相手チャンプを設定してください
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )
