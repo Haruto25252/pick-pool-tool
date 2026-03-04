@@ -519,7 +519,7 @@ export default function Home() {
                     className="px-3 py-2 bg-orange-700 rounded-l hover:bg-orange-600 text-sm font-bold">
                     OP.GG
                   </button>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opgghdr:opacity-100 transition-opacity z-20 pointer-events-none">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opgghdr:opacity-100 transition-opacity z-20 pointer-events-none">
                     あなたのプロフィールを開きます
                   </div>
                 </div>
@@ -528,7 +528,7 @@ export default function Home() {
                     className="px-2 py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm">
                     ✏️
                   </button>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opggEdit:opacity-100 transition-opacity z-20 pointer-events-none">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opggEdit:opacity-100 transition-opacity z-20 pointer-events-none">
                     RiotIDを変更します
                   </div>
                 </div>
@@ -549,7 +549,7 @@ export default function Home() {
                     className="px-3 py-2 bg-gray-700 rounded-l hover:bg-gray-600 text-sm">
                     🔗 {username}
                   </button>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameBtn:opacity-100 transition-opacity z-20 pointer-events-none">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameBtn:opacity-100 transition-opacity z-20 pointer-events-none">
                     あなたのプロフィールリンクをコピーします
                   </div>
                 </div>
@@ -558,7 +558,7 @@ export default function Home() {
                     className="px-2 py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm">
                     ✏️
                   </button>
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameEdit:opacity-100 transition-opacity z-20 pointer-events-none">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameEdit:opacity-100 transition-opacity z-20 pointer-events-none">
                     あなたのユーザー名を変更します
                   </div>
                 </div>
