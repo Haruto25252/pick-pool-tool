@@ -103,6 +103,8 @@ export default function Home() {
   const [showScoreDetail, setShowScoreDetail] = useState<string | null>(null)
   const [masteryData, setMasteryData] = useState<Record<string, number>>({})
   const [viewMode, setViewMode] = useState<'pool' | 'all' | 'mastery'>('pool')
+  const [newRiotIdName, setNewRiotIdName] = useState('')
+  const [newRiotIdTag, setNewRiotIdTag] = useState('')
   const router = useRouter()
   const supabase = createClient()
 
@@ -183,11 +185,12 @@ export default function Home() {
     setViewMode('mastery')
   }
 
-  const saveRiotId = async () => {
-    if (!newRiotId.trim()) return
+  const saveRiotId = async (riotIdValue?: string) => {
+    const value = riotIdValue || newRiotId
+    if (!value.trim()) return
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('profile').update({ riot_id: newRiotId.trim() }).eq('id', user!.id)
-    setRiotId(newRiotId.trim())
+    await supabase.from('profile').update({ riot_id: value.trim() }).eq('id', user!.id)
+    setRiotId(value.trim())
     setShowRiotIdModal(false)
   }
 
@@ -546,7 +549,17 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="relative group/opggEdit">
-                  <button onClick={() => { setNewRiotId(riotId); setShowRiotIdModal(true) }}
+                  <button onClick={() => {
+                      if (riotId) {
+                        const [name, tag] = riotId.split('#')
+                        setNewRiotIdName(name || '')
+                        setNewRiotIdTag(tag || '')
+                      } else {
+                        setNewRiotIdName('')
+                        setNewRiotIdTag('')
+                      }
+                      setShowRiotIdModal(true)
+                    }}
                     className="px-2 py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm">
                     ✏️
                   </button>
@@ -556,7 +569,11 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <button onClick={() => setShowRiotIdModal(true)}
+              <button onClick={() => {
+                    setNewRiotIdName('')
+                    setNewRiotIdTag('')
+                    setShowRiotIdModal(true)
+                  }}
                 className="px-3 py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm">
                 RiotID設定
               </button>
@@ -1365,13 +1382,24 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
             <h2 className="text-xl font-bold mb-2 text-orange-400">RiotIDを設定</h2>
-            <p className="text-sm text-gray-400 mb-4">例: Haru#JP1</p>
-            <input type="text" placeholder="ゲーム名#タグライン..." value={newRiotId}
-              onChange={e => setNewRiotId(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && saveRiotId()}
-              className="w-full p-2 mb-4 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-orange-400" />
+            <p className="text-sm text-gray-400 mb-4">例: Haru / JP1</p>
+            <div className="flex items-center gap-2 mb-4">
+              <input type="text" placeholder="サモナーネーム"
+                value={newRiotIdName}
+                onChange={e => setNewRiotIdName(e.target.value)}
+                className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-orange-400" />
+              <span className="text-gray-400 font-bold">#</span>
+              <input type="text" placeholder="タグライン"
+                value={newRiotIdTag}
+                onChange={e => setNewRiotIdTag(e.target.value)}
+                className="w-24 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-orange-400" />
+            </div>
             <div className="flex gap-3">
-              <button onClick={saveRiotId} className="flex-1 p-2 bg-orange-400 text-gray-900 font-bold rounded hover:bg-orange-300">保存</button>
+              <button onClick={() => {
+                if (!newRiotIdName.trim() || !newRiotIdTag.trim()) return
+                const combined = `${newRiotIdName.trim()}#${newRiotIdTag.trim()}`
+                saveRiotId(combined)
+              }} className="flex-1 p-2 bg-orange-400 text-gray-900 font-bold rounded hover:bg-orange-300">保存</button>
               <button onClick={() => setShowRiotIdModal(false)}
                 className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
             </div>
