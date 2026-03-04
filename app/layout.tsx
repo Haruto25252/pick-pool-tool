@@ -18,6 +18,13 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,7 +51,7 @@ export default function RootLayout({
             </svg>
           </a>
         </div>
-        <p className="text-xs">VERSION v1.65</p>
+        <p className="text-xs">VERSION v1.66</p>
         <p className="text-xs">© 2026 Produced by Harun</p>
       </footer>
       </body>
