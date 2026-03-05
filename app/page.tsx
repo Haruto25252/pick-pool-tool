@@ -561,7 +561,7 @@ export default function Home() {
                       }
                       setShowRiotIdModal(true)
                     }}
-                    className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm">
+                    className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm flex items-center justify-center">
                     <Pencil size={14} />
                   </button>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opggEdit:opacity-100 transition-opacity z-20 pointer-events-none">
@@ -595,7 +595,7 @@ export default function Home() {
                 </div>
                 <div className="relative group/usernameEdit">
                   <button onClick={() => { setNewUsername(username!); setShowUsernameModal(true) }}
-                    className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm">
+                    className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm flex items-center justify-center">
                     <Pencil size={14} />
                   </button>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameEdit:opacity-100 transition-opacity z-20 pointer-events-none">
