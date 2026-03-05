@@ -229,7 +229,7 @@ export default function MatchDetailPage() {
       const assignedLane = enemyLanes[username]
 
       for (const { name, priority, lanes } of pool.champions) {
-        if (assignedLane && lanes.length > 0 && !lanes.includes(assignedLane)) continue
+        if (assignedLane && assignedLane !== '全て' && lanes.length > 0 && !lanes.includes(assignedLane)) continue
         if (!champScores[name]) champScores[name] = 0
         // 複数人が使えるチャンピオンは加算
         champScores[name] += priority
