@@ -542,7 +542,7 @@ export default function Home() {
               <div className="flex gap-1">
                 <div className="relative group/opgghdr">
                   <button onClick={() => window.open(`https://www.op.gg/summoners/jp/${encodeURIComponent(riotId.replace('#', '-'))}`, '_blank')}
-                    className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-700 rounded-l hover:bg-orange-600 text-sm font-bold flex items-center gap-1">
+                    className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm flex items-center gap-1">
                     OP.GG <ExternalLink size={12} />
                   </button>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opgghdr:opacity-100 transition-opacity z-20 pointer-events-none">
@@ -561,7 +561,7 @@ export default function Home() {
                       }
                       setShowRiotIdModal(true)
                     }}
-                    className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm flex items-center justify-center">
+                    className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm flex items-center justify-center h-full">
                     <Pencil size={14} />
                   </button>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opggEdit:opacity-100 transition-opacity z-20 pointer-events-none">
@@ -575,7 +575,7 @@ export default function Home() {
                     setNewRiotIdTag('')
                     setShowRiotIdModal(true)
                   }}
-                className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm">
+                className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm flex items-center gap-1">
                 RiotID設定
               </button>
             )}
@@ -586,7 +586,7 @@ export default function Home() {
                     navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
                     alert('リンクをコピーしました！')
                   }}
-                    className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-700 rounded-l hover:bg-gray-600 text-sm flex items-center gap-1">
+                    className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm flex items-center gap-1">
                     <Link size={14} /> {username}
                   </button>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameBtn:opacity-100 transition-opacity z-20 pointer-events-none">
@@ -595,7 +595,7 @@ export default function Home() {
                 </div>
                 <div className="relative group/usernameEdit">
                   <button onClick={() => { setNewUsername(username!); setShowUsernameModal(true) }}
-                    className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm flex items-center justify-center">
+                    className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm flex items-center justify-center h-full">
                     <Pencil size={14} />
                   </button>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameEdit:opacity-100 transition-opacity z-20 pointer-events-none">
@@ -605,7 +605,7 @@ export default function Home() {
               </div>
             ) : (
               <button onClick={() => setShowUsernameModal(true)}
-                className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm">
+                className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm flex items-center gap-1">
                 ユーザー名を設定
               </button>
             )}
