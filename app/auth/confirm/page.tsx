@@ -11,6 +11,12 @@ function ConfirmContent() {
   const supabase = createClient()
 
   useEffect(() => {
+    // エラーパラメータがある場合
+    const error = searchParams.get('error')
+    if (error) {
+      setStatus('error')
+      return
+    }
     const confirm = async () => {
       const token_hash = searchParams.get('token_hash')
       const type = searchParams.get('type')
@@ -20,20 +26,27 @@ function ConfirmContent() {
         const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as any })
         if (error) {
           setStatus('error')
-        } else {
-          setStatus('success')
-          setTimeout(() => router.push('/onboarding'), 2000)
+          } 
+          else {
+            setStatus('success')
+            setTimeout(() => router.push('/onboarding'), 2000)
+          }
+        } else if (code) {
+          try {
+            const { error } = await supabase.auth.exchangeCodeForSession(code)
+            if (error) {
+              console.error('exchange error:', error)
+              setStatus('error')
+            } else {
+              setStatus('success')
+              setTimeout(() => router.push('/'), 2000)
+            }
+          } catch (e) {
+            console.error('catch error:', e)
+            setStatus('error')
+          }
         }
-      } else if (code) {
-        // Discord等のOAuthコールバック
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) {
-          setStatus('error')
-        } else {
-          setStatus('success')
-          setTimeout(() => router.push('/'), 2000)
-        }
-      } else {
+      else {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
           setStatus('success')
