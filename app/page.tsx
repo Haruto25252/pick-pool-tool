@@ -105,6 +105,11 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'pool' | 'all' | 'mastery'>('pool')
   const [newRiotIdName, setNewRiotIdName] = useState('')
   const [newRiotIdTag, setNewRiotIdTag] = useState('')
+  const [showLinkModal, setShowLinkModal] = useState(false)
+  const [linkAccountName, setLinkAccountName] = useState('')
+  const [linkPassword, setLinkPassword] = useState('')
+  const [linkError, setLinkError] = useState('')
+  const [linkLoading, setLinkLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -615,6 +620,10 @@ export default function Home() {
             <button onClick={() => setShowUserList(true)}
               className="px-2 py-1 sm:px-3 sm:py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
               👥 みんなのプール
+            </button>
+            <button onClick={() => setShowLinkModal(true)}
+              className="px-2 py-1 sm:px-3 sm:py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm">
+              🔗 連携
             </button>
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
               className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
@@ -1492,6 +1501,47 @@ export default function Home() {
           </div>
         )
       })()}
+      {showLinkModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+        <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+          <h2 className="text-xl font-bold mb-3 text-purple-400">アカウント連携</h2>
+          <div className="bg-red-900 border border-red-500 rounded p-3 mb-4 text-sm text-red-200">
+            ⚠️ 既存のアカウントと紐づけします。<br />
+            <span className="font-bold text-red-300">今のアカウント内にある情報は破棄されます。</span><br />
+            それでもよろしいですか？
+          </div>
+          <p className="text-sm text-gray-400 mb-3">連携するアカウントのログイン情報を入力してください。</p>
+          <input type="text" placeholder="アカウント名"
+            value={linkAccountName} onChange={e => setLinkAccountName(e.target.value)}
+            className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-purple-400" />
+          <input type="password" placeholder="パスワード"
+            value={linkPassword} onChange={e => setLinkPassword(e.target.value)}
+            className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-purple-400" />
+          {linkError && <p className="text-red-400 text-sm mb-3">{linkError}</p>}
+          <div className="flex gap-3">
+            <button onClick={async () => {
+              setLinkError(''); setLinkLoading(true)
+              const email = `${linkAccountName.trim().toLowerCase().replace(/\s+/g, '_')}@pickpooltool.app`
+              const { data, error } = await supabase.auth.signInWithPassword({ email, password: linkPassword })
+              if (error || !data.user) { setLinkError('アカウント名またはパスワードが違います'); setLinkLoading(false); return }
+              // 現在のユーザーIDを連携先のIDに付け替え
+              const { data: { user: currentUser } } = await supabase.auth.getUser()
+              if (!currentUser) { setLinkError('エラーが発生しました'); setLinkLoading(false); return }
+              // 連携先アカウントのユーザーIDでログインし直す
+              alert('連携が完了しました！連携先アカウントでログインし直します。')
+              setShowLinkModal(false)
+              router.push('/')
+            }}
+              disabled={linkLoading}
+              className="flex-1 p-2 bg-purple-600 text-white font-bold rounded hover:bg-purple-500 disabled:opacity-50">
+              {linkLoading ? '処理中...' : '連携する'}
+            </button>
+            <button onClick={() => { setShowLinkModal(false); setLinkError('') }}
+              className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
     
   )
