@@ -138,7 +138,7 @@ export default function Home() {
       supabase.from('user_tags').select('*').order('created_at'),
       supabase.from('champion_config').select('*'),
       supabase.from('default_champion_config').select('*'),
-      supabase.from('profile').select('username, riot_id').eq('id', user!.id).single(),
+      supabase.from('profile').select('username, riot_id').eq('id', user!.id).maybeSingle(),
       supabase.from('profile').select('id, username').order('username')
     ])
     if (pool) setPickPool(pool)
