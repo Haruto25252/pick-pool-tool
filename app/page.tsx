@@ -105,12 +105,6 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'pool' | 'all' | 'mastery'>('pool')
   const [newRiotIdName, setNewRiotIdName] = useState('')
   const [newRiotIdTag, setNewRiotIdTag] = useState('')
-  const [showLinkModal, setShowLinkModal] = useState(false)
-  const [linkAccountName, setLinkAccountName] = useState('')
-  const [linkPassword, setLinkPassword] = useState('')
-  const [linkError, setLinkError] = useState('')
-  const [linkLoading, setLinkLoading] = useState(false)
-  const [loginProvider, setLoginProvider] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -172,10 +166,6 @@ export default function Home() {
     if (profileData) {
       setUsername(profileData.username)
       setRiotId(profileData.riot_id)
-    }
-    if (user) {
-      const provider = user.app_metadata?.provider || 'email'
-      setLoginProvider(provider)
     }
     if (allProfiles) setUserList(allProfiles)
   }
@@ -625,10 +615,6 @@ export default function Home() {
             <button onClick={() => setShowUserList(true)}
               className="px-2 py-1 sm:px-3 sm:py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
               👥 みんなのプール
-            </button>
-            <button onClick={() => setShowLinkModal(true)}
-              className="px-2 py-1 sm:px-3 sm:py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm">
-              🔗 連携
             </button>
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
               className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
@@ -1506,104 +1492,6 @@ export default function Home() {
           </div>
         )
       })()}
-      {showLinkModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
-            <h2 className="text-xl font-bold mb-3 text-purple-400">アカウント連携</h2>
-            <div className="bg-red-900 border border-red-500 rounded p-3 mb-4 text-sm text-red-200">
-              ⚠️ 既存のアカウントと紐づけします。<br />
-              <span className="font-bold text-red-300">今のアカウント内にある情報は破棄されます。</span><br />
-              それでもよろしいですか？
-            </div>
-
-            {loginProvider === 'email' ? (
-              // アカウント名ログイン → Google/Discordで連携
-              <div>
-                <p className="text-sm text-gray-400 mb-3">連携するアカウントを選択してください。</p>
-                <button onClick={async () => {
-                  const { data: { user: currentUser } } = await supabase.auth.getUser()
-                  if (currentUser) {
-                    localStorage.setItem('linkFromUserId', currentUser.id)
-                  }
-                  await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: { redirectTo: `${window.location.origin}/auth/confirm` }
-                  })
-                }}
-                  className="w-full p-3 bg-white text-gray-900 font-bold rounded hover:bg-gray-100 flex items-center justify-center gap-3 mb-3">
-                  <img src="https://www.google.com/favicon.ico" className="w-5 h-5" />
-                  Googleアカウントと連携
-                </button>
-                <button onClick={async () => {
-                  const { data: { user: currentUser } } = await supabase.auth.getUser()
-                  if (currentUser) {
-                    localStorage.setItem('linkFromUserId', currentUser.id)
-                  }
-                  await supabase.auth.signInWithOAuth({
-                    provider: 'discord',
-                    options: { redirectTo: `${window.location.origin}/auth/confirm` }
-                  })
-                }}
-                  className="w-full p-3 bg-indigo-600 text-white font-bold rounded hover:bg-indigo-500 flex items-center justify-center gap-3 mb-3">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.032.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/>
-                  </svg>
-                  Discordアカウントと連携
-                </button>
-              </div>
-            ) : (
-              // Google/Discordログイン → アカウント名で連携
-              <div>
-                <p className="text-sm text-gray-400 mb-3">連携するアカウントのログイン情報を入力してください。</p>
-                <input type="text" placeholder="アカウント名"
-                  value={linkAccountName} onChange={e => setLinkAccountName(e.target.value)}
-                  className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-purple-400" />
-                <input type="password" placeholder="パスワード"
-                  value={linkPassword} onChange={e => setLinkPassword(e.target.value)}
-                  className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-purple-400" />
-                {linkError && <p className="text-red-400 text-sm mb-3">{linkError}</p>}
-                <button onClick={async () => {
-                  setLinkError(''); setLinkLoading(true)
-                  const email = `${linkAccountName.trim().toLowerCase().replace(/\s+/g, '_')}@pickpooltool.app`
-                  
-                  // 現在のユーザーIDを取得
-                  const { data: { user: currentUser } } = await supabase.auth.getUser()
-                  if (!currentUser) { setLinkError('エラーが発生しました'); setLinkLoading(false); return }
-                  const sourceUserId = currentUser.id
-
-                  // 連携先アカウントを確認（一時的にサインイン）
-                  const { data, error } = await supabase.auth.signInWithPassword({ email, password: linkPassword })
-                  if (error || !data.user) { setLinkError('アカウント名またはパスワードが違います'); setLinkLoading(false); return }
-                  const targetUserId = data.user.id
-
-                  // 連携先のデータを現在のアカウントIDに移行
-                  await supabase.from('pick_pool').update({ user_id: sourceUserId }).eq('user_id', targetUserId)
-                  await supabase.from('matchup').update({ user_id: sourceUserId }).eq('user_id', targetUserId)
-                  await supabase.from('champion_config').update({ user_id: sourceUserId }).eq('user_id', targetUserId)
-                  await supabase.from('user_tags').update({ user_id: sourceUserId }).eq('user_id', targetUserId)
-                  await supabase.from('profile').update({ id: sourceUserId }).eq('id', targetUserId)
-
-                  // 元のアカウント（Google/Discord）に戻る
-                  await supabase.auth.signOut()
-                  const { error: signInError } = await supabase.auth.signInWithOAuth({
-                    provider: currentUser.app_metadata?.provider === 'discord' ? 'discord' : 'google',
-                    options: { redirectTo: `${window.location.origin}/auth/confirm` }
-                  })
-                  
-                  setLinkLoading(false)
-                }}
-                  disabled={linkLoading}
-                  className="w-full p-2 bg-purple-600 text-white font-bold rounded hover:bg-purple-500 disabled:opacity-50 mb-3">
-                  {linkLoading ? '処理中...' : '連携する'}
-                </button>
-              </div>
-            )}
-
-            <button onClick={() => { setShowLinkModal(false); setLinkError('') }}
-              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
-          </div>
-        </div>
-      )}
     </div>
     
   )
