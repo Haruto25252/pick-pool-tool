@@ -43,7 +43,7 @@ export default function LoginPage() {
   const handleRegister = async () => {
     setError(''); setLoading(true)
     if (accountName.trim().length < 3) { setError('アカウント名は3文字以上にしてください'); setLoading(false); return }
-    <p className="text-xs text-gray-500 mb-3">※ アカウント名は英数字のみ使用できます</p>
+
     if (password.length < 6) { setError('パスワードは6文字以上にしてください'); setLoading(false); return }
     const { error } = await supabase.auth.signUp({
       email: getEmail(accountName),
@@ -104,6 +104,7 @@ export default function LoginPage() {
         <input type="text" placeholder="アカウント名"
           value={accountName} onChange={e => setAccountName(e.target.value)}
           className="w-full p-3 mb-3 rounded bg-gray-700 text-white border border-gray-600 focus:border-yellow-400 focus:outline-none" />
+        <p className="text-xs text-gray-500 mb-3">※ アカウント名は英数字のみ使用できます</p>
         <input type="password" placeholder="パスワード（6文字以上）"
           value={password} onChange={e => setPassword(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && (mode === 'login' ? handleLogin() : handleRegister())}
