@@ -31,21 +31,23 @@ function ConfirmContent() {
             setStatus('success')
             setTimeout(() => router.push('/onboarding'), 2000)
           }
-        } else if (code) {
-          try {
-            const { error } = await supabase.auth.exchangeCodeForSession(code)
-            if (error) {
-              console.error('exchange error:', error)
-              setStatus('error')
-            } else {
-              setStatus('success')
-              setTimeout(() => router.push('/'), 2000)
+          } else if (code) {
+            // セッションが自動的に確立されるまで待つ
+            let attempts = 0
+            const checkSession = async () => {
+              const { data: { session } } = await supabase.auth.getSession()
+              if (session) {
+                setStatus('success')
+                setTimeout(() => router.push('/'), 2000)
+              } else if (attempts < 5) {
+                attempts++
+                setTimeout(checkSession, 500)
+              } else {
+                setStatus('error')
+              }
             }
-          } catch (e) {
-            console.error('catch error:', e)
-            setStatus('error')
+            checkSession()
           }
-        }
       else {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
