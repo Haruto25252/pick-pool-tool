@@ -37,20 +37,42 @@ function ConfirmContent() {
             const checkSession = async () => {
               const { data: { session } } = await supabase.auth.getSession()
               if (session) {
+                // アカウント連携処理
+                const linkFromUserId = localStorage.getItem('linkFromUserId')
+                if (linkFromUserId && linkFromUserId !== session.user.id) {
+                  const newUserId = session.user.id
+                  await supabase.from('pick_pool').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
+                  await supabase.from('matchup').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
+                  await supabase.from('champion_config').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
+                  await supabase.from('user_tags').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
+                  await supabase.from('profile').update({ id: newUserId }).eq('id', linkFromUserId)
+                  localStorage.removeItem('linkFromUserId')
+                }
                 setStatus('success')
                 setTimeout(() => router.push('/'), 2000)
-              } else if (attempts < 5) {
+              }else if (attempts < 5) {
                 attempts++
                 setTimeout(checkSession, 500)
               } else {
                 setStatus('error')
-              }
+              } 
             }
             checkSession()
           }
       else {
         const { data: { session } } = await supabase.auth.getSession()
         if (session) {
+          // アカウント連携処理
+          const linkFromUserId = localStorage.getItem('linkFromUserId')
+          if (linkFromUserId && linkFromUserId !== session.user.id) {
+            const newUserId = session.user.id
+            await supabase.from('pick_pool').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
+            await supabase.from('matchup').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
+            await supabase.from('champion_config').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
+            await supabase.from('user_tags').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
+            await supabase.from('profile').update({ id: newUserId }).eq('id', linkFromUserId)
+            localStorage.removeItem('linkFromUserId')
+          }
           setStatus('success')
           setTimeout(() => router.push('/'), 2000)
         } else {

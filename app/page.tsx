@@ -1521,6 +1521,10 @@ export default function Home() {
               <div>
                 <p className="text-sm text-gray-400 mb-3">連携するアカウントを選択してください。</p>
                 <button onClick={async () => {
+                  const { data: { user: currentUser } } = await supabase.auth.getUser()
+                  if (currentUser) {
+                    localStorage.setItem('linkFromUserId', currentUser.id)
+                  }
                   await supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: { redirectTo: `${window.location.origin}/auth/confirm` }
@@ -1531,6 +1535,10 @@ export default function Home() {
                   Googleアカウントと連携
                 </button>
                 <button onClick={async () => {
+                  const { data: { user: currentUser } } = await supabase.auth.getUser()
+                  if (currentUser) {
+                    localStorage.setItem('linkFromUserId', currentUser.id)
+                  }
                   await supabase.auth.signInWithOAuth({
                     provider: 'discord',
                     options: { redirectTo: `${window.location.origin}/auth/confirm` }
@@ -1557,11 +1565,32 @@ export default function Home() {
                 <button onClick={async () => {
                   setLinkError(''); setLinkLoading(true)
                   const email = `${linkAccountName.trim().toLowerCase().replace(/\s+/g, '_')}@pickpooltool.app`
+                  
+                  // 現在のユーザーIDを取得
+                  const { data: { user: currentUser } } = await supabase.auth.getUser()
+                  if (!currentUser) { setLinkError('エラーが発生しました'); setLinkLoading(false); return }
+                  const sourceUserId = currentUser.id
+
+                  // 連携先アカウントを確認（一時的にサインイン）
                   const { data, error } = await supabase.auth.signInWithPassword({ email, password: linkPassword })
                   if (error || !data.user) { setLinkError('アカウント名またはパスワードが違います'); setLinkLoading(false); return }
-                  alert('連携が完了しました！連携先アカウントでログインし直します。')
-                  setShowLinkModal(false)
-                  router.push('/')
+                  const targetUserId = data.user.id
+
+                  // 連携先のデータを現在のアカウントIDに移行
+                  await supabase.from('pick_pool').update({ user_id: sourceUserId }).eq('user_id', targetUserId)
+                  await supabase.from('matchup').update({ user_id: sourceUserId }).eq('user_id', targetUserId)
+                  await supabase.from('champion_config').update({ user_id: sourceUserId }).eq('user_id', targetUserId)
+                  await supabase.from('user_tags').update({ user_id: sourceUserId }).eq('user_id', targetUserId)
+                  await supabase.from('profile').update({ id: sourceUserId }).eq('id', targetUserId)
+
+                  // 元のアカウント（Google/Discord）に戻る
+                  await supabase.auth.signOut()
+                  const { error: signInError } = await supabase.auth.signInWithOAuth({
+                    provider: currentUser.app_metadata?.provider === 'discord' ? 'discord' : 'google',
+                    options: { redirectTo: `${window.location.origin}/auth/confirm` }
+                  })
+                  
+                  setLinkLoading(false)
                 }}
                   disabled={linkLoading}
                   className="w-full p-2 bg-purple-600 text-white font-bold rounded hover:bg-purple-500 disabled:opacity-50 mb-3">
