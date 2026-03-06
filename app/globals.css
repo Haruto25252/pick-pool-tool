@@ -30,14 +30,18 @@ html, body {
   max-width: 100vw;
 }
 
-@keyframes rainbow-border {
-  0% { --border-angle: 0deg; }
-  100% { --border-angle: 360deg; }
+@property --rainbow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rainbow-spin {
+  to { --rainbow-angle: 360deg; }
 }
 
 .rainbow-border {
-  border: 2px solid transparent !important;
-  background-clip: padding-box;
+  border: none !important;
   position: relative;
 }
 
@@ -45,19 +49,27 @@ html, body {
   content: '';
   position: absolute;
   inset: -2px;
-  border-radius: inherit;
-  background: linear-gradient(
-    var(--border-angle, 0deg),
-    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000
+  border-radius: 10px;
+  background: conic-gradient(
+    from var(--rainbow-angle),
+    #ff0000, #ff4400, #ff8800, #ffcc00, #ffff00,
+    #88ff00, #00ff00, #00ff88, #00ffff, #0088ff,
+    #0000ff, #8800ff, #ff00ff, #ff0088, #ff0000
   );
   animation: rainbow-spin 2s linear infinite;
-  z-index: -1;
+  z-index: 0;
 }
 
-@keyframes rainbow-spin {
-  0% { background: linear-gradient(0deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
-  25% { background: linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
-  50% { background: linear-gradient(180deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
-  75% { background: linear-gradient(270deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
-  100% { background: linear-gradient(360deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
+.rainbow-border::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 8px;
+  background: inherit;
+  z-index: 1;
+}
+
+.rainbow-border > * {
+  position: relative;
+  z-index: 2;
 }
