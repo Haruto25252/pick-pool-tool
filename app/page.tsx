@@ -495,7 +495,7 @@ export default function Home() {
 
   const maxPossibleScore = enemyChamps.filter(e => !bannedChamps.has(e)).length
   const rainbowThreshold = Math.floor(maxPossibleScore * 0.8)
-  const isRainbow = (name: string) => enemyChamps.length > 0 && rainbowThreshold > 0 && getCounterScore(name) >= rainbowThreshold
+  const isRainbow = (name: string) => enemyChamps.length > 0 && rainbowThreshold > 0 && (getCounterScore(name) >= rainbowThreshold && enemyChamps.length >= 3)
 
   const sorted = [...filtered].sort((a, b) => {
     const sa = getCounterScore(a)
@@ -801,9 +801,16 @@ export default function Home() {
                   </div>
                 )}
 
-                {isInPool && (
+                {(isInPool && isRainbow(name)) && (
                   <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
-                    className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : ' z-30 bg-gray-700 hover:bg-red-700'}`}>
+                    className={`absolute top-1 right-1 text-xs px-1 rounded z-100 ${isBanned ? 'bg-red-700' : ' bg-gray-700 hover:bg-red-700'}`}>
+                    {isBanned ? '✕' : 'BAN'}
+                  </button>
+                )}
+                
+                {(isInPool && isRainbow(name) == false) && (
+                  <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
+                    className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : ' bg-gray-700 hover:bg-red-700'}`}>
                     {isBanned ? '✕' : 'BAN'}
                   </button>
                 )}
