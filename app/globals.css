@@ -31,17 +31,33 @@ html, body {
 }
 
 @keyframes rainbow-border {
-  0% { border-color: #ff0000; }
-  17% { border-color: #ff8800; }
-  33% { border-color: #ffff00; }
-  50% { border-color: #00ff00; }
-  67% { border-color: #0088ff; }
-  83% { border-color: #8800ff; }
-  100% { border-color: #ff0000; }
+  0% { --border-angle: 0deg; }
+  100% { --border-angle: 360deg; }
 }
 
 .rainbow-border {
-  animation: rainbow-border 2s linear infinite;
-  border-width: 2px;
-  border-style: solid;
+  border: 2px solid transparent !important;
+  background-clip: padding-box;
+  position: relative;
+}
+
+.rainbow-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: linear-gradient(
+    var(--border-angle, 0deg),
+    #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000
+  );
+  animation: rainbow-spin 2s linear infinite;
+  z-index: -1;
+}
+
+@keyframes rainbow-spin {
+  0% { background: linear-gradient(0deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
+  25% { background: linear-gradient(90deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
+  50% { background: linear-gradient(180deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
+  75% { background: linear-gradient(270deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
+  100% { background: linear-gradient(360deg, #ff0000, #ff8800, #ffff00, #00ff00, #0088ff, #8800ff, #ff0000); }
 }
