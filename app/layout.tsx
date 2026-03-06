@@ -54,7 +54,7 @@ export default function RootLayout({
             </svg>
           </a>
         </div>
-        <p className="text-xs">VERSION v2.01</p>
+        <p className="text-xs">VERSION v2.06</p>
         <p className="text-xs">© 2026 Produced by Harun</p>
       </footer>
       <SpeedInsights />

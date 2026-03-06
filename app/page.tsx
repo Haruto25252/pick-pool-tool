@@ -493,6 +493,10 @@ export default function Home() {
     return true
   })
 
+  const maxPossibleScore = enemyChamps.filter(e => !bannedChamps.has(e)).length
+  const rainbowThreshold = Math.floor(maxPossibleScore * 0.8)
+  const isRainbow = (name: string) => enemyChamps.length > 0 && rainbowThreshold > 0 && getCounterScore(name) >= rainbowThreshold
+
   const sorted = [...filtered].sort((a, b) => {
     const sa = getCounterScore(a)
     const sb = getCounterScore(b)
@@ -766,6 +770,7 @@ export default function Home() {
                     ${!isInPool ? 'cursor-pointer' : ''}
                     ${isBanned ? 'opacity-40 border-red-700 bg-red-950'
                       : enemyChamps.includes(name) && !bannedChamps.has(name) ? 'opacity-40 border-orange-500 bg-orange-950'
+                      : isRainbow(name) ? `bg-green-950 ${!isInPool ? 'opacity-60' : ''} rainbow-border`
                       : isSkillMatchup ? `bg-yellow-950 border-yellow-400 ${!isInPool ? 'opacity-60' : ''}`
                       : isCounter ? `bg-green-950 border-green-400 ${!isInPool ? 'opacity-60' : ''}`
                       : isDisadvantage ? `bg-red-950 border-red-800 ${!isInPool ? 'opacity-60' : ''}`

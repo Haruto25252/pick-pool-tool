@@ -29,3 +29,19 @@ html, body {
   overflow-x: hidden;
   max-width: 100vw;
 }
+
+@keyframes rainbow-border {
+  0% { border-color: #ff0000; }
+  17% { border-color: #ff8800; }
+  33% { border-color: #ffff00; }
+  50% { border-color: #00ff00; }
+  67% { border-color: #0088ff; }
+  83% { border-color: #8800ff; }
+  100% { border-color: #ff0000; }
+}
+
+.rainbow-border {
+  animation: rainbow-border 2s linear infinite;
+  border-width: 2px;
+  border-style: solid;
+}
