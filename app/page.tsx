@@ -803,7 +803,7 @@ export default function Home() {
 
                 {(isInPool && isRainbow(name)) && (
                   <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
-                    className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : ' bg-gray-700 hover:bg-red-700'}`}>
+                    className={`absolute top-1 right-1 text-xs px-1 rounded x-100 y-100 ${isBanned ? 'bg-red-700' : ' bg-gray-700 hover:bg-red-700'}`}>
                     {isBanned ? '✕' : 'BAN'}
                   </button>
                 )}
