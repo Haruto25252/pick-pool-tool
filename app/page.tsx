@@ -803,14 +803,14 @@ export default function Home() {
 
                 {(isInPool && isRainbow(name)) && (
                   <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
-                    className={`absolute top-1 right-1 text-xs px-1 rounded x-100 y-100 ${isBanned ? 'bg-red-700' : ' bg-gray-700 hover:bg-red-700'}`}>
+                    className={`absolute text-xs px-1 rounded/ ${isBanned ? 'top-1 right-1 bg-red-700' : ' bottom-7 left-11 bg-gray-700 hover:bg-red-700'}`}>
                     {isBanned ? '✕' : 'BAN'}
                   </button>
                 )}
                 
                 {(isInPool && isRainbow(name) == false) && (
                   <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
-                    className={`absolute top-1 right-1 text-xs px-1 rounded x-100 y-100 ${isBanned ? 'bg-red-700' : ' bg-gray-700 hover:bg-red-700'}`}>
+                    className={`absolute top-1 right-1 text-xs px-1 rounded/ ${isBanned ? 'bg-red-700' : ' bg-gray-700 hover:bg-red-700'}`}>
                     {isBanned ? '✕' : 'BAN'}
                   </button>
                 )}
