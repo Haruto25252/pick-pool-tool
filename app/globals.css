@@ -41,23 +41,14 @@ html, body {
 }
 
 .rainbow-border {
-  position: relative;
-  isolation: isolate;
-  border: 2px solid transparent !important;
-  background-clip: padding-box;
-}
-
-.rainbow-border::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border-radius: 10px;
-  background: conic-gradient(
-    from var(--rainbow-angle),
-    #ff0000, #ff4400, #ff8800, #ffcc00, #ffff00,
-    #88ff00, #00ff00, #00ff88, #00ffff, #0088ff,
-    #0000ff, #8800ff, #ff00ff, #ff0088, #ff0000
-  );
+  border: 2px solid transparent;
+  background:
+    linear-gradient(#052e16, #052e16) padding-box,
+    conic-gradient(
+      from var(--rainbow-angle),
+      #ff0000, #ff4400, #ff8800, #ffcc00, #ffff00,
+      #88ff00, #00ff00, #00ff88, #00ffff, #0088ff,
+      #0000ff, #8800ff, #ff00ff, #ff0088, #ff0000
+    ) border-box;
   animation: rainbow-spin 2s linear infinite;
-  z-index: -1;
 }
