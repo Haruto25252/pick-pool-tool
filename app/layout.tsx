@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "Pick Pool Tool",
   description: "LoL Pick Pool Management Tool",
   manifest: "/manifest.json",
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/icon-192.png',
+  },
 };
 
 export const viewport = {
