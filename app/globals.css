@@ -41,9 +41,9 @@ html, body {
 }
 
 .rainbow-border {
+  border: 2px solid transparent !important;
   position: relative;
   isolation: isolate;
-  border: 2px solid transparent !important;
   background-clip: padding-box;
 }
 
