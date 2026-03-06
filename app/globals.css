@@ -65,7 +65,7 @@ html, body {
   position: absolute;
   inset: 2px;
   border-radius: 8px;
-  background: #1f2937;
+  background: inherit;
   z-index: 1;
 }
 
