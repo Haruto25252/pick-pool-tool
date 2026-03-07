@@ -526,15 +526,11 @@ export default function Home() {
     if (enemyChamps.length < 3) return false
     const activeEnemies = enemyChamps.filter(e => !bannedChamps.has(e))
     if (activeEnemies.length === 0) return false
+    const threshold = activeEnemies.length * 0.8
     if (viewMode === 'all') {
-      const maxScore = activeEnemies.length
-      return getPureCounterScore(name) >= maxScore * 0.8
+      return getPureCounterScore(name) >= threshold
     }
-    const pickInfo = getPickInfo(name)
-    const mult = pickInfo ? (PRIORITY_MULTIPLIERS[pickInfo.priority] ?? 1.0) : 1.0
-    const maxScore = activeEnemies.length * mult
-    if (maxScore === 0) return false
-    return getCounterScore(name) >= maxScore * 0.8
+    return getCounterScore(name) >= threshold
   }
 
   const sorted = [...filtered].sort((a, b) => {
