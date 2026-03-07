@@ -29,7 +29,7 @@ function ConfirmContent() {
           } 
           else {
             setStatus('success')
-            setTimeout(() => router.push('/onboarding'), 2000)
+            setTimeout(() => router.push('/'), 2000)
           }
         } else if (code) {
           let attempts = 0
@@ -45,10 +45,8 @@ function ConfirmContent() {
                 await supabase.from('user_tags').update({ user_id: newUserId }).eq('user_id', linkFromUserId)
                 await supabase.from('profile').update({ id: newUserId }).eq('id', linkFromUserId)
                 localStorage.removeItem('linkFromUserId')
-                setTimeout(() => router.push('/'), 2000)
-              } else {
-                setTimeout(() => router.push('/onboarding'), 2000)
               }
+              setTimeout(() => router.push('/'), 2000)
               setStatus('success')
             } else if (attempts < 5) {
               attempts++
