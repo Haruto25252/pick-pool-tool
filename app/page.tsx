@@ -525,11 +525,6 @@ export default function Home() {
     const sa = getCounterScore(a)
     const sb = getCounterScore(b)
 
-    const aSkill = enemyChamps.some(e => matchups[a]?.favorable.includes(e)) &&
-                   enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
-    const bSkill = enemyChamps.some(e => matchups[b]?.favorable.includes(e)) &&
-                   enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
-
     if (viewMode === 'mastery') {
       return (masteryData[b] ?? 0) - (masteryData[a] ?? 0)
     }
@@ -538,24 +533,9 @@ export default function Home() {
       return getPoolCounterScore(b) - getPoolCounterScore(a)
     }
 
-    if (viewMode === 'all') {
-      // 全チャンプモード：カウンタースコア純粋に並べる
-      if (sb !== sa) return sb - sa
-      return 0
-    }
-
-    // ピックプールモード：グループ分けしてから優先度
-    if (enemyChamps.length > 0) {
-      const aGroup = sa > 0 ? 0 : aSkill ? 1 : sa === 0 ? 2 : 3
-      const bGroup = sb > 0 ? 0 : bSkill ? 1 : sb === 0 ? 2 : 3
-      if (aGroup !== bGroup) return aGroup - bGroup
-    } else {
-      if (sb !== sa) return sb - sa
-    }
-
-    const pa = getPickInfo(a)?.priority ?? 0
-    const pb = getPickInfo(b)?.priority ?? 0
-    return pb - pa
+    // pool / all モード：スコア降順（理解度は既にスコアに反映済み）
+    if (sb !== sa) return sb - sa
+    return 0
   })
 
   const allTags = [...TAGS, ...userTags.map(t => t.name)]
