@@ -257,7 +257,7 @@ export default function Home() {
       if (mu.favorable.includes(enemy)) score += mult
       if (mu.unfavorable.includes(enemy)) score -= mult
     })
-    return score
+    return Math.round(score * 100) / 100
   }
 
   const getPureCounterScore = (name: string): number => {
