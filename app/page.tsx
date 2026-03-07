@@ -272,9 +272,13 @@ export default function Home() {
     return score
   }
 
-  const getPoolCounterScore = (champName: string): number => {
+  const getPoolCounterScore = (champName: string, laneFilter?: string): number => {
     let score = 0
     pickPool.forEach(p => {
+      if (laneFilter && laneFilter !== '全て') {
+        const pLanes = getChampionLanes(p.champion_name)
+        if (pLanes.length > 0 && !pLanes.includes(laneFilter)) return
+      }
       const mu = matchups[p.champion_name]
       if (!mu) return
       if (mu.unfavorable.includes(champName)) {
@@ -509,9 +513,8 @@ export default function Home() {
   const uniqueDisplayChampions = Array.from(new Set(displayChampions))
 
   const filtered = uniqueDisplayChampions.filter(name => {
-    if (viewMode === 'counter' && getPoolCounterScore(name) <= 0) return false
+    if (viewMode === 'counter' && getPoolCounterScore(name, lane) <= 0) return false
     if (search !== '' && !name.includes(search)) return false
-    const info = getPickInfo(name)
     const lanes = getChampionLanes(name)
     if (lane !== '全て') {
       if (lanes.length > 0 && !lanes.includes(lane)) return false
@@ -538,7 +541,7 @@ export default function Home() {
       return (masteryData[b] ?? 0) - (masteryData[a] ?? 0)
     }
     if (viewMode === 'counter') {
-      return getPoolCounterScore(b) - getPoolCounterScore(a)
+      return getPoolCounterScore(b, lane) - getPoolCounterScore(a, lane)
     }
     if (viewMode === 'all') {
       // 全チャンプ：理解度倍率なしの純粋スコア
@@ -803,7 +806,7 @@ export default function Home() {
                                   enemyChamps.filter(e => !bannedChamps.has(e)).some(e => matchups[name]?.unfavorable.includes(e))
             const champTags = getChampionTags(name)
             const champLanes = getChampionLanes(name)
-            const poolCounterScore = getPoolCounterScore(name)
+            const poolCounterScore = getPoolCounterScore(name, lane)
 
             return (
                 <div key={name}
@@ -989,11 +992,15 @@ export default function Home() {
         {/* カウンターモード：脅威スコア詳細モーダル */}
         {showCounterScoreDetail && (() => {
           const champName = showCounterScoreDetail
-          const counteredPool = pickPool.filter(p => {
+          const laneFilteredPool = lane === '全て' ? pickPool : pickPool.filter(p => {
+            const pLanes = getChampionLanes(p.champion_name)
+            return pLanes.length === 0 || pLanes.includes(lane)
+          })
+          const counteredPool = laneFilteredPool.filter(p => {
             const mu = matchups[p.champion_name]
             return mu?.unfavorable.includes(champName)
           })
-          const safePool = pickPool.filter(p => {
+          const safePool = laneFilteredPool.filter(p => {
             const mu = matchups[p.champion_name]
             return !mu?.unfavorable.includes(champName)
           })
@@ -1007,7 +1014,7 @@ export default function Home() {
                   <div>
                     <h2 className="text-lg font-bold text-white">{champName}</h2>
                     <span className="text-sm text-red-400 font-bold">
-                      脅威スコア: {(() => { const s = getPoolCounterScore(champName); return s % 1 === 0 ? s : s.toFixed(1) })()}
+                      脅威スコア: {(() => { const s = getPoolCounterScore(champName, lane); return s % 1 === 0 ? s : s.toFixed(1) })()}
                     </span>
                   </div>
                 </div>
