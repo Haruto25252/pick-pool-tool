@@ -170,6 +170,12 @@ export default function Home() {
       setUsername(profileData.username)
       setRiotId(profileData.riot_id)
     }
+    const hasProfileData = profileData && (profileData.username || profileData.riot_id)
+    const skipOnboarding = typeof window !== 'undefined' && localStorage.getItem('skip_onboarding') === 'true'
+    if (!hasProfileData && !skipOnboarding) {
+      router.push('/onboarding')
+      return
+    }
     if (allProfiles) setUserList(allProfiles)
   }
 

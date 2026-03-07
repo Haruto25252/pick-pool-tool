@@ -9,6 +9,7 @@ export default function OnboardingPage() {
   const [riotId, setRiotId] = useState('')
   const [usernameError, setUsernameError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [doNotShow, setDoNotShow] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -16,9 +17,14 @@ export default function OnboardingPage() {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      // 既に設定済みの場合はスキップ
+      // スキップフラグが設定済みの場合はホームへ
+      if (typeof window !== 'undefined' && localStorage.getItem('skip_onboarding') === 'true') {
+        router.push('/')
+        return
+      }
+      // 既にユーザー名またはRiot IDが設定済みの場合はスキップ
       const { data: profile } = await supabase.from('profile').select('username, riot_id').eq('id', user.id).single()
-      if (profile?.username) router.push('/')
+      if (profile?.username || profile?.riot_id) router.push('/')
     }
     check()
   }, [])
@@ -46,6 +52,13 @@ export default function OnboardingPage() {
       }, { onConflict: 'id' })
     }
 
+    router.push('/')
+  }
+
+  const handleSkip = () => {
+    if (doNotShow && typeof window !== 'undefined') {
+      localStorage.setItem('skip_onboarding', 'true')
+    }
     router.push('/')
   }
 
@@ -80,9 +93,20 @@ export default function OnboardingPage() {
           className="w-full p-3 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300 disabled:opacity-50">
           {loading ? '保存中...' : '始める →'}
         </button>
-        <button onClick={() => router.push('/')}
+
+        <label className="flex items-center gap-2 mt-4 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={doNotShow}
+            onChange={e => setDoNotShow(e.target.checked)}
+            className="w-4 h-4 accent-yellow-400"
+          />
+          <span className="text-sm text-gray-400">今後このメッセージを表示しない</span>
+        </label>
+
+        <button onClick={handleSkip}
           className="w-full p-3 mt-2 bg-gray-700 text-gray-400 rounded hover:bg-gray-600 text-sm">
-          スキップ
+          閉じる（スキップ）
         </button>
       </div>
     </div>
