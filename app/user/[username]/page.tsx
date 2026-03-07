@@ -51,8 +51,8 @@ export default function UserPage() {
   const [userList, setUserList] = useState<{id: string, username: string}[]>([])
   const [userListSearch, setUserListSearch] = useState('')
   const [showScoreDetail, setShowScoreDetail] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<'pool' | 'mastery'>('pool')
-  const [showCounterModal, setShowCounterModal] = useState(false)
+  const [showCounterScoreDetail, setShowCounterScoreDetail] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'pool' | 'mastery' | 'counter'>('pool')
   const [masteryData, setMasteryData] = useState<Record<string, number>>({})
   const [targetRiotId, setTargetRiotId] = useState<string | null>(null)
 
@@ -135,6 +135,18 @@ export default function UserPage() {
       if (mu.favorable.includes(enemy)) score += mult
       if (mu.unfavorable.includes(enemy)) score -= mult
     })
+    return Math.round(score * 100) / 100
+  }
+
+  const getPoolCounterScore = (champName: string): number => {
+    let score = 0
+    pickPool.forEach(p => {
+      const mu = matchups[p.champion_name]
+      if (!mu) return
+      if (mu.unfavorable.includes(champName)) {
+        score += PRIORITY_MULTIPLIERS[p.priority] ?? 1.0
+      }
+    })
     return score
   }
 
@@ -160,9 +172,12 @@ export default function UserPage() {
 
   const baseChampions = viewMode === 'mastery'
     ? Object.keys(masteryData)
+    : viewMode === 'counter'
+    ? allChampions
     : Array.from(new Set(pickPool.map(p => p.champion_name)))
 
   const filtered = baseChampions.filter(name => {
+    if (viewMode === 'counter' && getPoolCounterScore(name) <= 0) return false
     if (search !== '' && !name.includes(search)) return false
     const lanes = getChampionLanes(name)
     if (lane !== '全て' && lanes.length > 0 && !lanes.includes(lane)) return false
@@ -171,26 +186,9 @@ export default function UserPage() {
   })
 
   const sorted = Array.from(new Set([...filtered].sort((a, b) => {
-    if (viewMode === 'mastery') {
-      return (masteryData[b] ?? 0) - (masteryData[a] ?? 0)
-    }
-    const sa = getCounterScore(a)
-    const sb = getCounterScore(b)
-    const aSkill = enemyChamps.some(e => matchups[a]?.favorable.includes(e)) &&
-                  enemyChamps.some(e => matchups[a]?.unfavorable.includes(e))
-    const bSkill = enemyChamps.some(e => matchups[b]?.favorable.includes(e)) &&
-                  enemyChamps.some(e => matchups[b]?.unfavorable.includes(e))
-
-    if (enemyChamps.length > 0) {
-      const aGroup = sa > 0 ? 0 : aSkill ? 1 : sa === 0 ? 2 : 3
-      const bGroup = sb > 0 ? 0 : bSkill ? 1 : sb === 0 ? 2 : 3
-      if (aGroup !== bGroup) return aGroup - bGroup
-    }
-
-    if (sb !== sa) return sb - sa
-    const pa = getPickInfo(a)?.priority ?? 0
-    const pb = getPickInfo(b)?.priority ?? 0
-    return pb - pa
+    if (viewMode === 'mastery') return (masteryData[b] ?? 0) - (masteryData[a] ?? 0)
+    if (viewMode === 'counter') return getPoolCounterScore(b) - getPoolCounterScore(a)
+    return getCounterScore(b) - getCounterScore(a)
   })))
 
   if (notFound) return (
@@ -212,15 +210,6 @@ export default function UserPage() {
             <p className="text-xs text-gray-400">閲覧モード（編集不可）</p>
           </div>
             <div className="flex gap-2 flex-wrap justify-end">
-              <div className="relative group/counter">
-                <button onClick={() => setShowCounterModal(true)}
-                  className="px-3 py-2 bg-teal-700 rounded hover:bg-teal-600 text-sm font-bold">
-                  カウンター
-                </button>
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/counter:opacity-100 transition-opacity z-20 pointer-events-none">
-                  あなたのピックプールにカウンターのチャンピオンを確認
-                </div>
-              </div>
               <button onClick={() => setShowUserList(true)}
                 className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
                 👥 みんなのプール
@@ -277,7 +266,7 @@ export default function UserPage() {
         </div>
 
         {/* モード切り替え */}
-        <div className="flex gap-2 mb-3">
+        <div className="flex gap-2 mb-3 flex-wrap">
           <button onClick={() => setViewMode('pool')}
             className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
             ピックプール
@@ -286,6 +275,15 @@ export default function UserPage() {
             className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
             マスタリー順
           </button>
+          <div className="relative group/counter">
+            <button onClick={() => setViewMode('counter')}
+              className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'counter' ? 'bg-teal-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
+              カウンター
+            </button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/counter:opacity-100 transition-opacity z-20 pointer-events-none">
+              このピックプールに対するカウンターチャンピオンたちを並べます
+            </div>
+          </div>
         </div>
         {/* フィルター */}
         <div className="mb-4">
@@ -322,6 +320,7 @@ export default function UserPage() {
             const mu = matchups[name]
             const iconUrl = getChampionIcon(name)
             const score = getCounterScore(name)
+            const poolCounterScore = getPoolCounterScore(name)
             const isCounter = score > 0
             const isDisadvantage = score < 0
             const isSkillMatchup = enemyChamps.filter(e => !bannedChamps.has(e)).some(e => matchups[name]?.favorable.includes(e)) &&
@@ -332,7 +331,11 @@ export default function UserPage() {
             return (
               <div key={name}
                 className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all
-                  ${isBanned ? 'opacity-40 border-red-700 bg-red-950'
+                  ${viewMode === 'counter'
+                    ? isBanned ? 'opacity-40 border-red-700 bg-red-950'
+                      : poolCounterScore >= 2 ? 'bg-red-950 border-red-500'
+                      : 'bg-orange-950 border-orange-700'
+                    : isBanned ? 'opacity-40 border-red-700 bg-red-950'
                     : enemyChamps.includes(name) && !bannedChamps.has(name) ? 'opacity-40 border-orange-500 bg-orange-950'
                     : isSkillMatchup ? 'bg-yellow-950 border-yellow-400'
                     : isCounter ? 'bg-green-950 border-green-400'
@@ -343,7 +346,12 @@ export default function UserPage() {
                   className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
                   {isBanned ? '✕' : 'BAN'}
                 </button>
-                {enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 && (
+                {viewMode === 'counter' ? (
+                  <button onClick={() => setShowCounterScoreDetail(name)}
+                    className="absolute top-1 left-1 text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all">
+                    {poolCounterScore % 1 === 0 ? poolCounterScore : poolCounterScore.toFixed(1)}
+                  </button>
+                ) : enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 && (
                   <button onClick={() => setShowScoreDetail(name)}
                     className={`absolute top-1 left-1 text-xs font-bold px-1 rounded hover:bg-gray-700 transition-all ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
                     {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
@@ -379,58 +387,42 @@ export default function UserPage() {
         </div>
       </div>
 
-      {/* カウンターモーダル：ピックプール全体へのカウンター一覧 */}
-      {showCounterModal && (() => {
-        const allChampions = Object.keys(championMap)
-        const counterChamps = allChampions
-          .map(champName => {
-            let score = 0
-            const counteredPool: { name: string; priority: number }[] = []
-            pickPool.forEach(p => {
-              const mu = matchups[p.champion_name]
-              if (!mu) return
-              if (mu.unfavorable.includes(champName)) {
-                const mult = PRIORITY_MULTIPLIERS[p.priority] ?? 1.0
-                score += mult
-                counteredPool.push({ name: p.champion_name, priority: p.priority })
-              }
-            })
-            return { champName, score, counteredPool }
-          })
-          .filter(c => c.score > 0)
-          .sort((a, b) => b.score - a.score)
+      {/* カウンターモード：脅威スコア詳細モーダル */}
+      {showCounterScoreDetail && (() => {
+        const champName = showCounterScoreDetail
+        const counteredPool = pickPool.filter(p => matchups[p.champion_name]?.unfavorable.includes(champName))
+        const safePool = pickPool.filter(p => !matchups[p.champion_name]?.unfavorable.includes(champName))
         return (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md max-h-screen overflow-y-auto">
-              <h2 className="text-xl font-bold mb-1 text-teal-400">このプールへのカウンター一覧</h2>
-              <p className="text-xs text-gray-400 mb-4">ピックプール全体を計算。スコアが高いほどこのプールへの脅威度が高い</p>
-              {pickPool.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">ピックプールが空です</p>
-              ) : counterChamps.length === 0 ? (
-                <p className="text-gray-500 text-sm text-center py-4">カウンターチャンプが見つかりません</p>
-              ) : (
-                <div className="grid gap-2 max-h-[32rem] overflow-y-auto pr-1">
-                  {counterChamps.map(({ champName, score, counteredPool }) => (
-                    <div key={champName} className="flex items-center gap-3 p-2 rounded bg-gray-700 border border-gray-600">
-                      {getChampionIcon(champName) && (
-                        <img src={getChampionIcon(champName)} alt={champName} className="w-9 h-9 rounded-full flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <span className="font-bold text-white text-sm">{champName}</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {counteredPool.map(p => (
-                            <span key={p.name} className="text-xs bg-red-900 text-red-300 px-1 rounded">
-                              ▼{p.name}(理{p.priority})
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      <span className="text-red-400 font-bold text-sm flex-shrink-0">{score.toFixed(1)}</span>
-                    </div>
-                  ))}
+            <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
+              <div className="flex items-center gap-3 mb-4">
+                {getChampionIcon(champName) && <img src={getChampionIcon(champName)} alt={champName} className="w-10 h-10 rounded-full" />}
+                <div>
+                  <h2 className="text-lg font-bold text-white">{champName}</h2>
+                  <span className="text-sm text-red-400 font-bold">
+                    脅威スコア: {(() => { const s = getPoolCounterScore(champName); return s % 1 === 0 ? s : s.toFixed(1) })()}
+                  </span>
                 </div>
-              )}
-              <button onClick={() => setShowCounterModal(false)}
+              </div>
+              <p className="text-xs text-gray-400 mb-3">このチャンピオンに不利なピックプール</p>
+              <div className="grid gap-2 max-h-80 overflow-y-auto">
+                {counteredPool.map(p => (
+                  <div key={p.champion_name} className="flex items-center gap-2 p-2 rounded border border-red-500 bg-red-950">
+                    {getChampionIcon(p.champion_name) && <img src={getChampionIcon(p.champion_name)} alt={p.champion_name} className="w-7 h-7 rounded-full" />}
+                    <span className="text-sm font-bold text-white">{p.champion_name}</span>
+                    <span className="text-xs text-gray-400 ml-1">理解度{p.priority}</span>
+                    <span className="text-xs text-red-400 ml-auto">▼ 不利</span>
+                  </div>
+                ))}
+                {safePool.map(p => (
+                  <div key={p.champion_name} className="flex items-center gap-2 p-2 rounded border border-gray-600 bg-gray-700 opacity-40">
+                    {getChampionIcon(p.champion_name) && <img src={getChampionIcon(p.champion_name)} alt={p.champion_name} className="w-7 h-7 rounded-full" />}
+                    <span className="text-sm font-bold text-gray-400">{p.champion_name}</span>
+                    <span className="text-xs text-gray-500 ml-auto">− 有利/互角</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => setShowCounterScoreDetail(null)}
                 className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
             </div>
           </div>
