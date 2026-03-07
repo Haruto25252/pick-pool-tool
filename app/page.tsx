@@ -171,7 +171,7 @@ export default function Home() {
       setRiotId(profileData.riot_id)
     }
     const hasProfileData = profileData && (profileData.username || profileData.riot_id)
-    const skipOnboarding = typeof window !== 'undefined' && localStorage.getItem('skip_onboarding') === 'true'
+    const skipOnboarding = typeof window !== 'undefined' && localStorage.getItem(`skip_onboarding_${user!.id}`) === 'true'
     if (!hasProfileData && !skipOnboarding) {
       router.push('/onboarding')
       return
