@@ -701,14 +701,28 @@ export default function Home() {
         {/* モード切り替え・検索・フィルター */}
         <div className="mb-4">
           <div className="flex gap-2 mb-3 items-center flex-wrap">
-            <button onClick={() => setViewMode('pool')}
-              className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-              マイピックプール
-            </button>
-            <button onClick={() => setViewMode('all')}
-              className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'all' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-              全チャンプ
-            </button>
+            <div className="relative group/pool">
+              <button onClick={() => setViewMode('pool')}
+                className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                マイピックプール
+              </button>
+              {enemyChamps.length > 0 && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/pool:opacity-100 transition-opacity z-20 pointer-events-none">
+                  あなたのチャンピオン理解度を考慮した並び替えにします
+                </div>
+              )}
+            </div>
+            <div className="relative group/all">
+              <button onClick={() => setViewMode('all')}
+                className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'all' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
+                全チャンプ
+              </button>
+              {enemyChamps.length > 0 && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/all:opacity-100 transition-opacity z-20 pointer-events-none">
+                  純粋なスコア計算をした並び替えにします
+                </div>
+              )}
+            </div>
             <div className="relative group/mastery">
               <button onClick={fetchMastery}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
@@ -726,7 +740,7 @@ export default function Home() {
                 カウンター
               </button>
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/counter:opacity-100 transition-opacity z-20 pointer-events-none">
-                あなたのピックプールへの脅威チャンプ一覧
+                あなたのピックプールに対するカウンターチャンピオンたちを並べます
               </div>
             </div>
             <div className="ml-auto flex gap-2">
