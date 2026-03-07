@@ -51,6 +51,7 @@ export default function UserPage() {
   const [userListSearch, setUserListSearch] = useState('')
   const [showScoreDetail, setShowScoreDetail] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<'pool' | 'mastery'>('pool')
+  const [showCounterModal, setShowCounterModal] = useState(false)
   const [masteryData, setMasteryData] = useState<Record<string, number>>({})
   const [targetRiotId, setTargetRiotId] = useState<string | null>(null)
 
@@ -207,7 +208,16 @@ export default function UserPage() {
             <h1 className="text-2xl font-bold text-yellow-400">{decodeURIComponent(username)} のピックプール</h1>
             <p className="text-xs text-gray-400">閲覧モード（編集不可）</p>
           </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap justify-end">
+              <div className="relative group/counter">
+                <button onClick={() => setShowCounterModal(true)}
+                  className="px-3 py-2 bg-teal-700 rounded hover:bg-teal-600 text-sm font-bold">
+                  カウンター
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/counter:opacity-100 transition-opacity z-20 pointer-events-none">
+                  あなたのピックプールにカウンターのチャンピオンを確認
+                </div>
+              </div>
               <button onClick={() => setShowUserList(true)}
                 className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
                 👥 みんなのプール
@@ -365,6 +375,79 @@ export default function UserPage() {
           })}
         </div>
       </div>
+
+      {/* カウンターモーダル */}
+      {showCounterModal && (() => {
+        const counterMultiplier = (p: number) => {
+          if (p >= 5) return 1.5
+          if (p >= 4) return 1.2
+          if (p >= 3) return 1.0
+          if (p >= 2) return 0.8
+          return 0.5
+        }
+        const activeEnemies = enemyChamps.filter(e => !bannedChamps.has(e))
+        const poolWithScores = pickPool
+          .map(p => {
+            const mu = matchups[p.champion_name]
+            if (!mu) return { ...p, score: 0, countering: [] as string[] }
+            const mult = counterMultiplier(p.priority)
+            let score = 0
+            const countering: string[] = []
+            activeEnemies.forEach(enemy => {
+              if (mu.favorable.includes(enemy)) {
+                score += mult
+                countering.push(enemy)
+              }
+            })
+            return { ...p, score, countering }
+          })
+          .filter(p => activeEnemies.length === 0 || p.score > 0)
+          .sort((a, b) => b.score - a.score)
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+            <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md max-h-screen overflow-y-auto">
+              <h2 className="text-xl font-bold mb-1 text-teal-400">カウンターチャンピオン確認</h2>
+              <p className="text-xs text-gray-400 mb-4">
+                {activeEnemies.length === 0
+                  ? 'ピックプール全チャンプ（相手チャンプを設定するとスコア順に表示）'
+                  : `相手: ${activeEnemies.join(', ')} へのカウンタースコア順`}
+              </p>
+              {activeEnemies.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">相手チャンプを設定してください</p>
+              ) : poolWithScores.length === 0 ? (
+                <p className="text-gray-500 text-sm text-center py-4">カウンターできるチャンプがいません</p>
+              ) : (
+                <div className="grid gap-2 max-h-96 overflow-y-auto">
+                  {poolWithScores.map(p => (
+                    <div key={p.champion_name} className="flex items-center gap-3 p-2 rounded bg-gray-700 border border-gray-600">
+                      {getChampionIcon(p.champion_name) && (
+                        <img src={getChampionIcon(p.champion_name)} alt={p.champion_name} className="w-9 h-9 rounded-full flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-sm">{p.champion_name}</span>
+                          <span className="text-xs text-gray-400">理解度{p.priority}</span>
+                          <span className="text-xs text-gray-500">×{counterMultiplier(p.priority)}</span>
+                        </div>
+                        {p.countering.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {p.countering.map(e => (
+                              <span key={e} className="text-xs bg-green-900 text-green-300 px-1 rounded">▲{e}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-teal-400 font-bold text-sm flex-shrink-0">+{p.score.toFixed(1)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setShowCounterModal(false)}
+                className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* 相手チャンプピッカー */}
       {showEnemyPicker && (
