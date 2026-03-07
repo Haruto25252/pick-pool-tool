@@ -106,6 +106,7 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'pool' | 'all' | 'mastery'>('pool')
   const [newRiotIdName, setNewRiotIdName] = useState('')
   const [newRiotIdTag, setNewRiotIdTag] = useState('')
+  const [showCounterModal, setShowCounterModal] = useState(false)
   const router = useRouter()
   const supabase = createClient()
 
@@ -252,6 +253,27 @@ export default function Home() {
     enemyChamps.filter(e => !bannedChamps.has(e)).forEach(enemy => {
       if (mu.favorable.includes(enemy)) score += 1
       if (mu.unfavorable.includes(enemy)) score -= 1
+    })
+    return score
+  }
+
+  const priorityMultiplier = (p: number): number => {
+    if (p >= 5) return 1.5
+    if (p >= 4) return 1.2
+    if (p >= 3) return 1.0
+    if (p >= 2) return 0.8
+    return 0.5
+  }
+
+  const getPoolCounterScore = (poolChampName: string): number => {
+    const mu = matchups[poolChampName]
+    if (!mu) return 0
+    const pickInfo = getPickInfo(poolChampName)
+    if (!pickInfo) return 0
+    const mult = priorityMultiplier(pickInfo.priority)
+    let score = 0
+    enemyChamps.filter(e => !bannedChamps.has(e)).forEach(enemy => {
+      if (mu.favorable.includes(enemy)) score += mult
     })
     return score
   }
@@ -703,6 +725,15 @@ export default function Home() {
               )}
             </div>
             <div className="ml-auto flex gap-2">
+              <div className="relative group/counter">
+                <button onClick={() => setShowCounterModal(true)}
+                  className="px-3 py-2 bg-teal-700 rounded hover:bg-teal-600 text-sm font-bold">
+                  カウンター
+                </button>
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/counter:opacity-100 transition-opacity z-20 pointer-events-none">
+                  あなたのピックプールにカウンターのチャンピオンを確認
+                </div>
+              </div>
               <button onClick={() => setShowTagManager(true)}
                 className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
                 タグ・レーン管理
@@ -765,9 +796,9 @@ export default function Home() {
 
             return (
                 <div key={name}
-                  onClick={() => !isInPool ? openAdd(name) : undefined}
+                  onClick={() => !isInPool && !isBanned ? openAdd(name) : undefined}
                   className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all group
-                    ${!isInPool ? 'cursor-pointer' : ''}
+                    ${!isInPool && !isBanned ? 'cursor-pointer' : ''}
                     ${isBanned ? 'opacity-40 border-red-700 bg-red-950'
                       : enemyChamps.includes(name) && !bannedChamps.has(name) ? 'opacity-40 border-orange-500 bg-orange-950'
                       : isRainbow(name) ? `${!isInPool ? 'opacity-60' : ''} rainbow-border`
@@ -779,7 +810,7 @@ export default function Home() {
                     }
                   `}>
                     {/* ピックプール未追加時のホバーメッセージ */}
-                    {!isInPool && (
+                    {!isInPool && !isBanned && (
                       <div className="absolute inset-0 flex items-end justify-center pb-1 pointer-events-none rounded-lg z-10">
                         <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity text-center px-1 bg-black bg-opacity-70 rounded">
                           + ピックプールに加える
@@ -801,12 +832,10 @@ export default function Home() {
                   </div>
                 )}
 
-                {isInPool && (
-                  <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
-                    className={`absolute top-1 right-1 text-xs px-1 rounded/ ${isBanned ? 'bg-red-700' : ' bg-gray-700 hover:bg-red-700'}`}>
-                    {isBanned ? '✕' : 'BAN'}
-                  </button>
-                )}
+                <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
+                  className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
+                  {isBanned ? '✕' : 'BAN'}
+                </button>
 
                 <div className="relative">
                   {iconUrl
@@ -931,6 +960,79 @@ export default function Home() {
             )
           })}
         </div>
+        {/* カウンターモーダル */}
+        {showCounterModal && (() => {
+          const counterMultiplier = (p: number) => {
+            if (p >= 5) return 1.5
+            if (p >= 4) return 1.2
+            if (p >= 3) return 1.0
+            if (p >= 2) return 0.8
+            return 0.5
+          }
+          const activeEnemies = enemyChamps.filter(e => !bannedChamps.has(e))
+          const poolWithScores = pickPool
+            .map(p => {
+              const mu = matchups[p.champion_name]
+              if (!mu) return { ...p, score: 0, countering: [] as string[] }
+              const mult = counterMultiplier(p.priority)
+              let score = 0
+              const countering: string[] = []
+              activeEnemies.forEach(enemy => {
+                if (mu.favorable.includes(enemy)) {
+                  score += mult
+                  countering.push(enemy)
+                }
+              })
+              return { ...p, score, countering }
+            })
+            .filter(p => activeEnemies.length === 0 || p.score > 0)
+            .sort((a, b) => b.score - a.score)
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+              <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md max-h-screen overflow-y-auto">
+                <h2 className="text-xl font-bold mb-1 text-teal-400">カウンターチャンピオン確認</h2>
+                <p className="text-xs text-gray-400 mb-4">
+                  {activeEnemies.length === 0
+                    ? 'ピックプール全チャンプ（相手チャンプを設定するとスコア順に表示）'
+                    : `相手: ${activeEnemies.join(', ')} へのカウンタースコア順`}
+                </p>
+                {activeEnemies.length === 0 ? (
+                  <p className="text-gray-500 text-sm text-center py-4">相手チャンプを設定してください</p>
+                ) : poolWithScores.length === 0 ? (
+                  <p className="text-gray-500 text-sm text-center py-4">カウンターできるチャンプがいません</p>
+                ) : (
+                  <div className="grid gap-2 max-h-96 overflow-y-auto">
+                    {poolWithScores.map(p => (
+                      <div key={p.champion_name} className="flex items-center gap-3 p-2 rounded bg-gray-700 border border-gray-600">
+                        {getChampionIcon(p.champion_name) && (
+                          <img src={getChampionIcon(p.champion_name)} alt={p.champion_name} className="w-9 h-9 rounded-full flex-shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white text-sm">{p.champion_name}</span>
+                            <span className="text-xs text-gray-400">理解度{p.priority}</span>
+                            <span className="text-xs text-gray-500">×{counterMultiplier(p.priority)}</span>
+                          </div>
+                          {p.countering.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {p.countering.map(e => (
+                                <span key={e} className="text-xs bg-green-900 text-green-300 px-1 rounded">▲{e}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-teal-400 font-bold text-sm flex-shrink-0">+{p.score.toFixed(1)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={() => setShowCounterModal(false)}
+                  className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
+              </div>
+            </div>
+          )
+        })()}
+
         {/* ユーザー名設定モーダル */}
         {showUsernameModal && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
