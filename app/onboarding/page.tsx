@@ -58,8 +58,12 @@ export default function OnboardingPage() {
   }
 
   const handleSkip = () => {
-    if (doNotShow && userId && typeof window !== 'undefined') {
-      localStorage.setItem(`skip_onboarding_${userId}`, 'true')
+    if (typeof window !== 'undefined') {
+      if (doNotShow && userId) {
+        localStorage.setItem(`skip_onboarding_${userId}`, 'true')
+      }
+      // セッション中は再表示しない
+      sessionStorage.setItem('onboarding_skipped', 'true')
     }
     router.push('/')
   }
