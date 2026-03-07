@@ -10,6 +10,7 @@ export default function OnboardingPage() {
   const [usernameError, setUsernameError] = useState('')
   const [loading, setLoading] = useState(false)
   const [doNotShow, setDoNotShow] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -17,8 +18,9 @@ export default function OnboardingPage() {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      // スキップフラグが設定済みの場合はホームへ
-      if (typeof window !== 'undefined' && localStorage.getItem('skip_onboarding') === 'true') {
+      setUserId(user.id)
+      // スキップフラグが設定済みの場合はホームへ（ユーザーIDごとに管理）
+      if (typeof window !== 'undefined' && localStorage.getItem(`skip_onboarding_${user.id}`) === 'true') {
         router.push('/')
         return
       }
@@ -56,8 +58,8 @@ export default function OnboardingPage() {
   }
 
   const handleSkip = () => {
-    if (doNotShow && typeof window !== 'undefined') {
-      localStorage.setItem('skip_onboarding', 'true')
+    if (doNotShow && userId && typeof window !== 'undefined') {
+      localStorage.setItem(`skip_onboarding_${userId}`, 'true')
     }
     router.push('/')
   }
