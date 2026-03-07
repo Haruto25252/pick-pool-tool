@@ -260,6 +260,18 @@ export default function Home() {
     return score
   }
 
+  const getPureCounterScore = (name: string): number => {
+    if (enemyChamps.length === 0) return 0
+    const mu = matchups[name]
+    if (!mu) return 0
+    let score = 0
+    enemyChamps.filter(e => !bannedChamps.has(e)).forEach(enemy => {
+      if (mu.favorable.includes(enemy)) score += 1
+      if (mu.unfavorable.includes(enemy)) score -= 1
+    })
+    return score
+  }
+
   const getPoolCounterScore = (champName: string): number => {
     let score = 0
     pickPool.forEach(p => {
@@ -522,20 +534,18 @@ export default function Home() {
   }
 
   const sorted = [...filtered].sort((a, b) => {
-    const sa = getCounterScore(a)
-    const sb = getCounterScore(b)
-
     if (viewMode === 'mastery') {
       return (masteryData[b] ?? 0) - (masteryData[a] ?? 0)
     }
-
     if (viewMode === 'counter') {
       return getPoolCounterScore(b) - getPoolCounterScore(a)
     }
-
-    // pool / all モード：スコア降順（理解度は既にスコアに反映済み）
-    if (sb !== sa) return sb - sa
-    return 0
+    if (viewMode === 'all') {
+      // 全チャンプ：理解度倍率なしの純粋スコア
+      return getPureCounterScore(b) - getPureCounterScore(a)
+    }
+    // pool：理解度倍率込みのスコア降順
+    return getCounterScore(b) - getCounterScore(a)
   })
 
   const allTags = [...TAGS, ...userTags.map(t => t.name)]
@@ -772,7 +782,7 @@ export default function Home() {
             const isInPool = !!pickInfo
             const mu = matchups[name]
             const iconUrl = getChampionIcon(name)
-            const score = getCounterScore(name)
+            const score = viewMode === 'all' ? getPureCounterScore(name) : getCounterScore(name)
             const isCounter = score > 0
             const isDisadvantage = score < 0
             const isSkillMatchup = enemyChamps.filter(e => !bannedChamps.has(e)).some(e => matchups[name]?.favorable.includes(e)) &&
