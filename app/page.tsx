@@ -832,17 +832,10 @@ export default function Home() {
                   </div>
                 )}
 
-                {isBanned && !isInPool ? (
-                  <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
-                    className="absolute inset-0 rounded-lg bg-red-700 bg-opacity-20 flex items-center justify-center z-10">
-                    <span className="text-white text-sm font-bold">✕</span>
-                  </button>
-                ) : (
-                  <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
-                    className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
-                    {isBanned ? '✕' : 'BAN'}
-                  </button>
-                )}
+                <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
+                  className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
+                  {isBanned ? '✕' : 'BAN'}
+                </button>
 
                 <div className="relative">
                   {iconUrl
