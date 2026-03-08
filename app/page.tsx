@@ -108,6 +108,7 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'pool' | 'all' | 'mastery' | 'counter'>('pool')
   const [newRiotIdName, setNewRiotIdName] = useState('')
   const [newRiotIdTag, setNewRiotIdTag] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
 
@@ -126,6 +127,7 @@ export default function Home() {
   }, [])
 
   const fetchData = async () => {
+    setIsLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     const [{ data: pool }, { data: mu }, { data: results }, { data: defaultMu }, { data: userTagsData }, { data: configs }, { data: defaultConfigs }, { data: profileData }, { data: allProfiles }] = await Promise.all([
       supabase.from('pick_pool').select('*').eq('user_id', user!.id).order('priority', { ascending: false }),
@@ -180,6 +182,7 @@ export default function Home() {
       return
     }
     if (allProfiles) setUserList(allProfiles)
+    setIsLoading(false)
   }
 
   const fetchMastery = async () => {
@@ -793,7 +796,13 @@ export default function Home() {
 
         {/* チャンピオン一覧 */}
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-          {viewMode === 'pool' && sorted.length === 0 && (
+          {isLoading && (
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mb-4" />
+              <p className="text-gray-400 text-sm">読み込み中...</p>
+            </div>
+          )}
+          {!isLoading && viewMode === 'pool' && sorted.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
               <p className="text-gray-500 text-lg mb-2">あなたのピックプールがありません</p>
               <p className="text-gray-600 text-sm">
@@ -802,7 +811,7 @@ export default function Home() {
               </p>
             </div>
           )}
-          {sorted.map(name => {
+          {!isLoading && sorted.map(name => {
             const pickInfo = getPickInfo(name)
             const isBanned = bannedChamps.has(name)
             const isInPool = !!pickInfo
