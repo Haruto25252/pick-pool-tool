@@ -18,7 +18,7 @@ export const translations: Record<Lang, Record<string, string>> = {
     // Language switcher
     'language.change': '言語を変更する',
     'language.changeToJa': '日本語に変更',
-    'language.changeToEn': '英語に変更',
+    'language.changeToEn': 'Change to English',
 
     // Header (main page)
     'header.opgg.tooltip': 'あなたのプロフィールを開きます',
