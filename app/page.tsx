@@ -7,6 +7,9 @@ import { getChampionIcon, championMap } from '@/lib/champions'
 import { PRIORITY_MULTIPLIERS } from '@/lib/constants'
 import { ExternalLink, Pencil, Link, Users, Swords, LogOut } from 'lucide-react'
 import { Tooltip } from '@/components/Tooltip'
+import { useLanguage } from '@/components/LanguageContext'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { getTagDisplayName, encodeTagName } from '@/lib/i18n'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
 const TAGS = ['ファイター', 'タンク', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'スケーリング']
@@ -80,7 +83,8 @@ export default function Home() {
   const [selectedTag, setSelectedTag] = useState('全て')
   const [userTags, setUserTags] = useState<UserTag[]>([])
   const [showTagManager, setShowTagManager] = useState(false)
-  const [newTagName, setNewTagName] = useState('')
+  const [newTagNameJa, setNewTagNameJa] = useState('')
+  const [newTagNameEn, setNewTagNameEn] = useState('')
   const [selectedTagForBulk, setSelectedTagForBulk] = useState<string | null>(null)
   const [bulkMode, setBulkMode] = useState<'tag' | 'lane' | null>(null)
   const [bulkTagChamps, setBulkTagChamps] = useState<string[]>([])
@@ -112,8 +116,25 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
   const supabase = createClient()
+  const { lang, t } = useLanguage()
 
   const allChampions = Object.keys(championMap)
+
+  // Display champion name based on language
+  const getDisplayName = (jaName: string) => lang === 'en' ? (championMap[jaName] || jaName) : jaName
+
+  // Search filter: in EN mode also search by English name
+  const matchesSearch = (name: string, query: string) => {
+    if (query === '') return true
+    if (lang === 'en') {
+      return name.toLowerCase().includes(query.toLowerCase()) ||
+        (championMap[name] || '').toLowerCase().includes(query.toLowerCase())
+    }
+    return name.includes(query)
+  }
+
+  // Lane display: translate '全て'
+  const displayLane = (l: string) => l === '全て' ? t('all') : l
 
   useEffect(() => {
     const getUser = async () => {
@@ -441,10 +462,12 @@ export default function Home() {
   }
 
   const addTag = async () => {
-    if (!newTagName.trim()) return
+    const encoded = encodeTagName(newTagNameJa, newTagNameEn)
+    if (!encoded) return
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('user_tags').insert({ name: newTagName.trim(), user_id: user!.id })
-    setNewTagName('')
+    await supabase.from('user_tags').insert({ name: encoded, user_id: user!.id })
+    setNewTagNameJa('')
+    setNewTagNameEn('')
     fetchData()
   }
 
@@ -527,7 +550,7 @@ export default function Home() {
 
   const filtered = uniqueDisplayChampions.filter(name => {
     if (viewMode === 'counter' && getPoolCounterScore(name, lane) <= 0) return false
-    if (search !== '' && !name.includes(search)) return false
+    if (!matchesSearch(name, search)) return false
     const lanes = getChampionLanes(name)
     if (lane !== '全て') {
       if (lanes.length > 0 && !lanes.includes(lane)) return false
@@ -578,13 +601,13 @@ export default function Home() {
           <div className="flex gap-2 flex-wrap justify-end">
             {riotId ? (
               <div className="flex gap-1">
-                <Tooltip text="あなたのプロフィールを開きます" position="bottom">
+                <Tooltip text={t('header.opgg.tooltip')} position="bottom">
                   <button onClick={() => window.open(`https://www.op.gg/summoners/jp/${encodeURIComponent(riotId.replace('#', '-'))}`, '_blank')}
                     className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm flex items-center gap-1">
                     OP.GG <ExternalLink size={12} />
                   </button>
                 </Tooltip>
-                <Tooltip text="RiotIDを変更します" position="bottom">
+                <Tooltip text={t('header.riotid.change.tooltip')} position="bottom">
                   <button onClick={() => {
                       if (riotId) {
                         const [name, tag] = riotId.split('#')
@@ -608,21 +631,21 @@ export default function Home() {
                     setShowRiotIdModal(true)
                   }}
                 className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm flex items-center gap-1">
-                RiotID設定
+                {t('header.riotid.set')}
               </button>
             )}
             {username ? (
               <div className="flex gap-1">
-                <Tooltip text="あなたのプロフィールリンクをコピーします" position="bottom">
+                <Tooltip text={t('header.username.copy.tooltip')} position="bottom">
                   <button onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
-                    alert('リンクをコピーしました！')
+                    alert(t('username.linkCopied'))
                   }}
                     className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm flex items-center gap-1">
                     <Link size={14} /> {username}
                   </button>
                 </Tooltip>
-                <Tooltip text="あなたのユーザー名を変更します" position="bottom">
+                <Tooltip text={t('header.username.change.tooltip')} position="bottom">
                   <button onClick={() => { setNewUsername(username!); setShowUsernameModal(true) }}
                     className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm flex items-center justify-center h-full">
                     <Pencil size={14} />
@@ -632,29 +655,30 @@ export default function Home() {
             ) : (
               <button onClick={() => setShowUsernameModal(true)}
                 className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm flex items-center gap-1">
-                ユーザー名を設定
+                {t('header.username.set')}
               </button>
             )}
             <button onClick={() => router.push('/match')}
               className="px-2 py-1 sm:px-3 sm:py-2 bg-green-700 rounded hover:bg-green-600 text-sm font-bold flex items-center gap-1">
-              <Swords size={14} /> 試合
+              <Swords size={14} /> {t('header.match')}
             </button>
             <button onClick={() => setShowUserList(true)}
               className="px-2 py-1 sm:px-3 sm:py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold flex items-center gap-1">
-              <Users size={14} /> みんなのプール
+              <Users size={14} /> {t('header.everyonePool')}
             </button>
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/login') }}
               className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm flex items-center gap-1">
-              <LogOut size={14} /> ログアウト
+              <LogOut size={14} /> {t('header.logout')}
             </button>
+            <LanguageSwitcher />
           </div>
         </div>
 
         {/* 相手チャンプ選択 */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-gray-400 font-bold">相手チャンプ:</span>
-            <Tooltip text="相手が使用するチャンピオンor相手の人が使用するかもしれないチャンピオン（ピックプール）を選択します" align="left">
+            <span className="text-sm text-gray-400 font-bold">{t('enemy.label')}</span>
+            <Tooltip text={t('enemy.tooltip')} align="left">
               <span className="text-xs text-gray-500 bg-gray-700 rounded-full w-4 h-4 flex items-center justify-center cursor-default">?</span>
             </Tooltip>
             {enemyChamps.map(name => (
@@ -664,20 +688,20 @@ export default function Home() {
                     ? 'opacity-50 border-red-700 bg-red-950'
                     : 'bg-red-900 border-red-500 hover:bg-red-800'}`}>
                 {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className={`w-5 h-5 rounded-full ${bannedChamps.has(name) ? 'grayscale' : ''}`} />}
-                <span className={bannedChamps.has(name) ? 'line-through text-red-300' : ''}>{name}</span>
+                <span className={bannedChamps.has(name) ? 'line-through text-red-300' : ''}>{getDisplayName(name)}</span>
                 {bannedChamps.has(name)
-                  ? <span className="text-red-300 ml-1 text-xs">BAN済</span>
-                  : <span className="text-gray-400 ml-1 text-xs">BANする</span>}
+                  ? <span className="text-red-300 ml-1 text-xs">{t('enemy.banned')}</span>
+                  : <span className="text-gray-400 ml-1 text-xs">{t('enemy.toBan')}</span>}
               </button>
             ))}
             <button onClick={() => setShowEnemyPicker(true)}
               className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm">
-              + 追加
+              {t('enemy.add')}
             </button>
             {enemyChamps.length > 0 && (
               <button onClick={() => setEnemyChamps([])}
                 className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-400">
-                クリア
+                {t('enemy.clear')}
               </button>
             )}
           </div>
@@ -686,77 +710,77 @@ export default function Home() {
         {/* BAN欄 */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-red-400 font-bold">🚫 BAN:</span>
+            <span className="text-sm text-red-400 font-bold">{t('ban.label')}</span>
             {Array.from(bannedChamps).map(name => (
               <button key={name} onClick={() => toggleBan(name)}
                 className="flex items-center gap-1 bg-red-900 border border-red-500 px-2 py-1 rounded text-sm hover:bg-red-800 opacity-60">
                 {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-5 h-5 rounded-full grayscale" />}
-                <span className="line-through text-red-300">{name}</span>
+                <span className="line-through text-red-300">{getDisplayName(name)}</span>
                 <span className="text-red-300 ml-1">×</span>
               </button>
             ))}
-            {bannedChamps.size === 0 && <span className="text-xs text-gray-500">なし</span>}
+            {bannedChamps.size === 0 && <span className="text-xs text-gray-500">{t('none')}</span>}
           </div>
         </div>
 
         {/* モード切り替え・検索・フィルター */}
         <div className="mb-4">
           <div className="flex gap-2 mb-3 items-center flex-wrap">
-            <Tooltip text={enemyChamps.length > 0 ? 'あなたのチャンピオン理解度を考慮した並び替えにします' : ''}>
+            <Tooltip text={enemyChamps.length > 0 ? t('view.myPool.tooltip') : ''}>
               <button onClick={() => setViewMode('pool')}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                マイピックプール
+                {t('view.myPool')}
               </button>
             </Tooltip>
-            <Tooltip text={enemyChamps.length > 0 ? '純粋なスコア計算をした並び替えにします' : ''}>
+            <Tooltip text={enemyChamps.length > 0 ? t('view.allChamps.tooltip') : ''}>
               <button onClick={() => setViewMode('all')}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'all' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                全チャンプ
+                {t('view.allChamps')}
               </button>
             </Tooltip>
-            <Tooltip text={!riotId ? 'RiotIDを設定してください' : ''}>
+            <Tooltip text={!riotId ? t('champ.noRiotId') : ''}>
               <button onClick={fetchMastery}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                マスタリー順
+                {t('view.mastery')}
               </button>
             </Tooltip>
-            <Tooltip text="あなたのピックプールに対するカウンターチャンピオンたちを並べます">
+            <Tooltip text={t('view.counter.tooltip')}>
               <button onClick={() => setViewMode('counter')}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'counter' ? 'bg-teal-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                カウンター
+                {t('view.counter')}
               </button>
             </Tooltip>
             <div className="ml-auto flex gap-2">
               <button onClick={() => setShowTagManager(true)}
                 className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
-                タグ・レーン管理
+                {t('tagLane.manage')}
               </button>
               <button onClick={() => setBannedChamps(new Set())}
                 className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
-                BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
+                {t('ban.reset')} {bannedChamps.size > 0 && `(${bannedChamps.size})`}
               </button>
             </div>
           </div>
-          <input type="text" placeholder="チャンピオン名で検索..."
+          <input type="text" placeholder={t('search')}
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full p-3 mb-3 rounded bg-gray-800 text-white border border-gray-700 focus:border-yellow-400 focus:outline-none" />
           <div className="flex gap-2 flex-wrap mb-2">
             {LANES.map(l => (
               <button key={l} onClick={() => setLane(l)}
                 className={`px-3 py-1 rounded font-bold text-sm ${lane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                {l}
+                {displayLane(l)}
               </button>
             ))}
           </div>
           <div className="flex gap-2 flex-wrap mt-2">
             <button onClick={() => setSelectedTag('全て')}
               className={`px-3 py-1 rounded font-bold text-sm ${selectedTag === '全て' ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
-              全て
+              {t('all')}
             </button>
             {allTags.map(tag => (
               <button key={tag} onClick={() => setSelectedTag(tag)}
                 className={`px-3 py-1 rounded font-bold text-sm ${selectedTag === tag ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                {tag}
+                {getTagDisplayName(tag, lang)}
               </button>
             ))}
           </div>
@@ -767,15 +791,15 @@ export default function Home() {
           {isLoading && (
             <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
               <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mb-4" />
-              <p className="text-gray-400 text-sm">読み込み中...</p>
+              <p className="text-gray-400 text-sm">{t('loading')}</p>
             </div>
           )}
           {!isLoading && viewMode === 'pool' && sorted.length === 0 && (
             <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-gray-500 text-lg mb-2">あなたのピックプールがありません</p>
+              <p className="text-gray-500 text-lg mb-2">{t('champ.emptyPool')}</p>
               <p className="text-gray-600 text-sm">
-                <button onClick={() => setViewMode('all')} className="text-yellow-400 hover:text-yellow-300 underline">全チャンプ</button>
-                でチャンピオンを追加してください
+                <button onClick={() => setViewMode('all')} className="text-yellow-400 hover:text-yellow-300 underline">{t('champ.goToAll')}</button>
+                {t('champ.addFromAll')}
               </p>
             </div>
           )}
@@ -817,14 +841,14 @@ export default function Home() {
                     {!isInPool && !isBanned && (
                       <div className="absolute inset-0 flex items-end justify-center pb-1 pointer-events-none rounded-lg z-10">
                         <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity text-center px-1 bg-black bg-opacity-70 rounded">
-                          + ピックプールに加える
+                          {t('champ.addToPool')}
                         </span>
                       </div>
                     )}
 
                 {viewMode === 'counter' ? (
                   <div className="absolute top-1 left-1">
-                    <Tooltip text="ピックプールへの脅威スコア詳細" position="bottom" zIndex="z-20">
+                    <Tooltip text={t('score.threat')} position="bottom" zIndex="z-20">
                       <button
                         onClick={(e) => { e.stopPropagation(); setShowCounterScoreDetail(name) }}
                         className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all">
@@ -834,7 +858,7 @@ export default function Home() {
                   </div>
                 ) : enemyChamps.length > 0 && (
                   <div className="absolute top-1 left-1">
-                    <Tooltip text={isInPool ? '設定された対面に対する詳細を表示' : ''} position="bottom" zIndex="z-20">
+                    <Tooltip text={isInPool ? t('score.detail.myPool') : ''} position="bottom" zIndex="z-20">
                       <button
                         onClick={(e) => { e.stopPropagation(); if (isInPool) setShowScoreDetail(name) }}
                         className={`text-xs font-bold px-1 rounded transition-all
@@ -856,16 +880,16 @@ export default function Home() {
                     : <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xs text-center">{name}</div>
                   }
                   {isDangerous(name) && (
-                    <span className="absolute -top-1 -left-1 text-lg" title="このチャンプへのカウンターがピックプールにいません">⚠️</span>
+                    <span className="absolute -top-1 -left-1 text-lg" title={t('dangerous.tooltip')}>⚠️</span>
                   )}
                 </div>
 
-                <Tooltip text={isInPool ? 'このチャンピオンをOP.GGで確認する' : ''} zIndex="z-10">
+                <Tooltip text={isInPool ? t('champ.viewOnOpgg') : ''} zIndex="z-10">
                   <div className="flex items-center gap-1 justify-center">
                     <p
                       onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
                       className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
-                      {name}
+                      {getDisplayName(name)}
                     </p>
                     {isInPool && (
                       <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
@@ -878,7 +902,7 @@ export default function Home() {
                 </Tooltip>
 
                 {champLanes.length > 0 && (
-                  <Tooltip text={isInPool ? 'このチャンピオンのロール・タグを編集します' : ''} zIndex="z-10">
+                  <Tooltip text={isInPool ? t('champ.editRoleTag') : ''} zIndex="z-10">
                     <p onClick={() => isInPool ? openEdit(pickInfo!) : undefined}
                       className={`text-xs text-gray-400 transition-colors ${isInPool ? 'cursor-pointer hover:text-gray-200' : ''}`}>
                       {champLanes.join(' / ')}
@@ -886,16 +910,16 @@ export default function Home() {
                   </Tooltip>
                 )}
 
-                <Tooltip text={isInPool ? 'このチャンピオンのロール・タグを編集します' : ''} zIndex="z-10">
+                <Tooltip text={isInPool ? t('champ.editRoleTag') : ''} zIndex="z-10">
                   <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openEdit(pickInfo!) }}
                     className={`text-xs px-1 rounded flex flex-wrap gap-1 justify-center max-w-full transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
                     {champTags.length > 0
-                      ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>)
-                      : <span className="text-gray-500">タグなし</span>}
+                      ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{getTagDisplayName(tag, lang)}</span>)
+                      : <span className="text-gray-500">{t('champ.tags.none')}</span>}
                   </button>
                 </Tooltip>
 
-                <Tooltip text={isInPool ? 'このチャンピオンの対面を設定します' : ''} zIndex="z-10">
+                <Tooltip text={isInPool ? t('champ.setMatchup') : ''} zIndex="z-10">
                   <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openMatchup(name) }}
                     className={`flex gap-1 text-xs rounded px-1 transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
                     {mu?.favorable.length > 0
@@ -907,13 +931,13 @@ export default function Home() {
                   </button>
                 </Tooltip>
                 {viewMode === 'mastery' && masteryData[name] && (
-                  <p className="text-xs text-gray-500">{(masteryData[name] / 10000).toFixed(0)}万pts</p>
+                  <p className="text-xs text-gray-500">{(masteryData[name] / 10000).toFixed(0)}{t('mastery.pts')}</p>
                 )}
 
                 {/* 記録・対策ビルド */}
                 <div className="flex gap-1 mt-1 flex-wrap justify-center">
                   {isInPool && viewMode !== 'counter' && (
-                    <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? '相手チャンプを設定してください' : '戦績を入力します'} zIndex="z-10">
+                    <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? t('result.noEnemy') : t('result.record.tooltip')} zIndex="z-10">
                       <button
                         onClick={() => {
                           const active = enemyChamps.filter(e => !bannedChamps.has(e))
@@ -922,12 +946,12 @@ export default function Home() {
                           setShowResultForm(true)
                         }}
                         className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-green-700 hover:bg-green-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
-                        記録
+                        {t('record')}
                       </button>
                     </Tooltip>
                   )}
                   {isInPool && viewMode !== 'counter' && (
-                    <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? '相手チャンプを設定してください' : 'LolalyticsでVSページに飛ぶ'} zIndex="z-10">
+                    <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? t('result.noEnemy') : t('counterbuild.tooltip')} zIndex="z-10">
                       <button
                         onClick={() => {
                           const active = enemyChamps.filter(e => !bannedChamps.has(e))
@@ -940,7 +964,7 @@ export default function Home() {
                           }
                         }}
                         className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
-                        対策ビルド
+                        {t('counterbuild')}
                       </button>
                     </Tooltip>
                   )}
@@ -972,22 +996,22 @@ export default function Home() {
                     <img src={getChampionIcon(champName)} alt={champName} className="w-10 h-10 rounded-full" />
                   )}
                   <div>
-                    <h2 className="text-lg font-bold text-white">{champName}</h2>
+                    <h2 className="text-lg font-bold text-white">{getDisplayName(champName)}</h2>
                     <span className="text-sm text-red-400 font-bold">
-                      脅威スコア: {(() => { const s = getPoolCounterScore(champName, lane); return s % 1 === 0 ? s : s.toFixed(1) })()}
+                      {t('score.threat')}{(() => { const s = getPoolCounterScore(champName, lane); return s % 1 === 0 ? s : s.toFixed(1) })()}
                     </span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mb-3">このチャンピオンに不利なあなたのピックプール</p>
+                <p className="text-xs text-gray-400 mb-3">{t('score.unfavorable')}</p>
                 <div className="grid gap-2 max-h-80 overflow-y-auto">
                   {counteredPool.map(p => (
                     <div key={p.champion_name} className="flex items-center gap-2 p-2 rounded border border-red-500 bg-red-950">
                       {getChampionIcon(p.champion_name) && (
                         <img src={getChampionIcon(p.champion_name)} alt={p.champion_name} className="w-7 h-7 rounded-full" />
                       )}
-                      <span className="text-sm font-bold text-white">{p.champion_name}</span>
-                      <span className="text-xs text-gray-400 ml-1">理解度{p.priority}</span>
-                      <span className="text-xs text-red-400 ml-auto">▼ 不利</span>
+                      <span className="text-sm font-bold text-white">{getDisplayName(p.champion_name)}</span>
+                      <span className="text-xs text-gray-400 ml-1">{p.priority}</span>
+                      <span className="text-xs text-red-400 ml-auto">{t('score.unfavorable.label')}</span>
                     </div>
                   ))}
                   {safePool.map(p => (
@@ -995,13 +1019,13 @@ export default function Home() {
                       {getChampionIcon(p.champion_name) && (
                         <img src={getChampionIcon(p.champion_name)} alt={p.champion_name} className="w-7 h-7 rounded-full" />
                       )}
-                      <span className="text-sm font-bold text-gray-400">{p.champion_name}</span>
-                      <span className="text-xs text-gray-500 ml-auto">− 有利/互角</span>
+                      <span className="text-sm font-bold text-gray-400">{getDisplayName(p.champion_name)}</span>
+                      <span className="text-xs text-gray-500 ml-auto">{t('score.advantage')}</span>
                     </div>
                   ))}
                 </div>
                 <button onClick={() => setShowCounterScoreDetail(null)}
-                  className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
+                  className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">{t('close')}</button>
               </div>
             </div>
           )
@@ -1011,17 +1035,17 @@ export default function Home() {
         {showUsernameModal && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
-              <h2 className="text-xl font-bold mb-2 text-yellow-400">ユーザー名を設定</h2>
-              <p className="text-sm text-gray-400 mb-4">他のユーザーがあなたのピックプールを閲覧できるURLになります</p>
-              <input type="text" placeholder="ユーザー名..." value={newUsername}
+              <h2 className="text-xl font-bold mb-2 text-yellow-400">{t('username.title')}</h2>
+              <p className="text-sm text-gray-400 mb-4">{t('username.desc')}</p>
+              <input type="text" placeholder={t('username.placeholder')} value={newUsername}
                 onChange={e => setNewUsername(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && saveUsername()}
                 className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
               {usernameError && <p className="text-red-400 text-sm mb-2">{usernameError}</p>}
               <div className="flex gap-3">
-                <button onClick={saveUsername} className="flex-1 p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">保存</button>
+                <button onClick={saveUsername} className="flex-1 p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">{t('save')}</button>
                 <button onClick={() => { setShowUsernameModal(false); setUsernameError('') }}
-                  className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
+                  className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">{t('cancel')}</button>
               </div>
             </div>
           </div>
@@ -1032,33 +1056,33 @@ export default function Home() {
       {showEnemyPicker && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl max-h-screen overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4 text-red-400">相手チャンプを選択</h2>
-            <input type="text" placeholder="検索..." value={enemySearch}
+            <h2 className="text-xl font-bold mb-4 text-red-400">{t('enemy.picker.title')}</h2>
+            <input type="text" placeholder={t('search')} value={enemySearch}
               onChange={e => setEnemySearch(e.target.value)}
               className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
             <div className="flex gap-2 flex-wrap mb-2">
               {LANES.map(l => (
                 <button key={l} onClick={() => setEnemyLane(l)}
                   className={`px-2 py-1 rounded text-xs font-bold ${enemyLane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                  {l}
+                  {displayLane(l)}
                 </button>
               ))}
             </div>
             <div className="flex gap-2 flex-wrap mb-3">
               <button onClick={() => setEnemyTag('全て')}
                 className={`px-2 py-1 rounded text-xs font-bold ${enemyTag === '全て' ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                全て
+                {t('all')}
               </button>
               {allTags.map(tag => (
                 <button key={tag} onClick={() => setEnemyTag(tag)}
                   className={`px-2 py-1 rounded text-xs font-bold ${enemyTag === tag ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                  {tag}
+                  {getTagDisplayName(tag, lang)}
                 </button>
               ))}
             </div>
             <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto mb-4">
               {allChampions.filter(n => {
-                if (enemySearch !== '' && !n.includes(enemySearch)) return false
+                if (!matchesSearch(n, enemySearch)) return false
                 if (enemyLane !== '全て') {
                   const lanes = getChampionLanes(n)
                   if (lanes.length > 0 && !lanes.includes(enemyLane)) return false
@@ -1077,14 +1101,14 @@ export default function Home() {
                         : isSelected ? 'border-red-400 bg-red-900'
                         : 'border-gray-600 bg-gray-700 hover:border-red-400'}`}>
                     {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                    <span className="truncate">{name}</span>
+                    <span className="truncate">{getDisplayName(name)}</span>
                   </button>
                 )
               })}
             </div>
             <button onClick={() => { setShowEnemyPicker(false); setEnemySearch(''); setEnemyLane('全て'); setEnemyTag('全て') }}
               className="w-full p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
-              完了
+              {t('done')}
             </button>
           </div>
         </div>
@@ -1095,10 +1119,10 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md max-h-screen overflow-y-auto">
             <h2 className="text-xl font-bold mb-4 text-yellow-400">
-              {editingChamp ? '編集' : '追加'}: {form.champion_name}
+              {editingChamp ? t('form.edit') : t('form.add')}: {getDisplayName(form.champion_name)}
             </h2>
             <div className="mb-3">
-              <p className="text-sm text-gray-400 mb-1">レーン（複数選択可）</p>
+              <p className="text-sm text-gray-400 mb-1">{t('form.lane')}</p>
               <div className="flex gap-2 flex-wrap">
                 {LANES.filter(l => l !== '全て').map(l => (
                   <button key={l} type="button"
@@ -1115,11 +1139,11 @@ export default function Home() {
             </div>
             <div className="mb-3">
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-sm text-gray-400">あなたのチャンピオン理解度: {form.priority}</p>
+                <p className="text-sm text-gray-400">{t('form.priority')}{form.priority}</p>
                 <div className="relative group">
                   <span className="text-xs text-gray-500 bg-gray-700 rounded-full w-4 h-4 flex items-center justify-center cursor-default">?</span>
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded w-48 text-center opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-                    理解度が高ければ高いほどカウンターピックで表示する際に、優先的に並べられます
+                    {t('form.priority.tooltip')}
                   </div>
                 </div>
               </div>
@@ -1128,35 +1152,35 @@ export default function Home() {
                 className="w-full" />
             </div>
             <div className="mb-3">
-              <p className="text-sm text-gray-400 mb-1">タグ（複数選択可）</p>
+              <p className="text-sm text-gray-400 mb-1">{t('form.tags')}</p>
               <div className="flex gap-2 flex-wrap">
                 {allTags.map(tag => (
                   <button key={tag} type="button"
                     onClick={() => {
                       const current = form.tags || []
-                      const next = current.includes(tag) ? current.filter(t => t !== tag) : [...current, tag]
+                      const next = current.includes(tag) ? current.filter(tt => tt !== tag) : [...current, tag]
                       setForm({ ...form, tags: next })
                     }}
                     className={`px-2 py-1 rounded text-xs font-bold ${(form.tags || []).includes(tag) ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                    {tag}
+                    {getTagDisplayName(tag, lang)}
                   </button>
                 ))}
               </div>
             </div>
-            <input placeholder="メモ（任意）" value={form.note}
+            <input placeholder={t('form.note')} value={form.note}
               onChange={e => setForm({ ...form, note: e.target.value })}
               className="w-full p-2 mb-4 rounded bg-gray-700" />
             <div className="flex gap-3">
               <button onClick={saveChampion} className="flex-1 p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
-                {editingChamp ? '保存' : '追加'}
+                {editingChamp ? t('form.save') : t('form.saveAdd')}
               </button>
               {editingChamp && (
                 <button onClick={() => { removeFromPool(editingChamp.id); setShowForm(false) }}
                   className="flex-1 p-2 bg-red-700 text-white font-bold rounded hover:bg-red-600">
-                  削除
+                  {t('delete')}
                 </button>
               )}
-              <button onClick={() => setShowForm(false)} className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
+              <button onClick={() => setShowForm(false)} className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">{t('cancel')}</button>
             </div>
           </div>
         </div>
@@ -1166,11 +1190,11 @@ export default function Home() {
       {selectedChamp && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl max-h-screen overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4 text-yellow-400">{selectedChamp} の対面設定</h2>
+            <h2 className="text-xl font-bold mb-4 text-yellow-400">{getDisplayName(selectedChamp)}{t('matchup.title')}</h2>
 
             {/* 一括設定モードボタン */}
             <div className="flex gap-2 mb-4">
-              <span className="text-sm text-gray-400 self-center">一括設定:</span>
+              <span className="text-sm text-gray-400 self-center">{t('matchup.bulk')}</span>
               {(['favorable', 'unfavorable', 'skill', 'none'] as const).map(type => (
                 <button key={type} onClick={() => setBulkMatchupMode(prev => prev === type ? null : type)}
                   className={`px-3 py-1 rounded text-sm font-bold border-2 transition-all
@@ -1180,20 +1204,20 @@ export default function Home() {
                         : type === 'skill' ? 'bg-yellow-600 border-yellow-400 text-white'
                         : 'bg-gray-600 border-gray-400 text-white'
                       : 'bg-gray-700 border-gray-600 hover:bg-gray-600'}`}>
-                  {type === 'favorable' ? '▲ 有利' : type === 'unfavorable' ? '▼ 不利' : type === 'skill' ? '● スキル' : '✕ 解除'}
+                  {type === 'favorable' ? t('matchup.favorable') : type === 'unfavorable' ? t('matchup.unfavorable') : type === 'skill' ? t('matchup.skill') : t('matchup.none')}
                 </button>
               ))}
-              {bulkMatchupMode && <span className="text-xs text-gray-400 self-center">クリックで一括設定中</span>}
+              {bulkMatchupMode && <span className="text-xs text-gray-400 self-center">{t('matchup.bulking')}</span>}
             </div>
 
             {/* 検索 */}
-            <input type="text" placeholder="検索..." value={favorableSearch}
+            <input type="text" placeholder={t('search')} value={favorableSearch}
               onChange={e => setFavorableSearch(e.target.value)}
               className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
 
             {/* チャンピオン一覧 */}
             <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto mb-4">
-              {allChampions.filter(n => n !== selectedChamp && (favorableSearch === '' || n.includes(favorableSearch))).map(name => {
+              {allChampions.filter(n => n !== selectedChamp && matchesSearch(n, favorableSearch)).map(name => {
                 const favorable = matchupInput.favorable.split(',').map(s => s.trim()).filter(Boolean)
                 const unfavorable = matchupInput.unfavorable.split(',').map(s => s.trim()).filter(Boolean)
                 const isFavorable = favorable.includes(name)
@@ -1212,7 +1236,7 @@ export default function Home() {
                     className={`text-xs p-1 rounded flex flex-col items-center gap-1 border-2 transition-all ${borderColor}`}>
                     {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-8 h-8 rounded-full" />}
                     <span className="truncate w-full text-center leading-tight">
-                      {isSkill ? '● ' : isFavorable ? '▲ ' : isUnfavorable ? '▼ ' : ''}{name}
+                      {isSkill ? '● ' : isFavorable ? '▲ ' : isUnfavorable ? '▼ ' : ''}{getDisplayName(name)}
                     </span>
                   </button>
                 )
@@ -1222,7 +1246,7 @@ export default function Home() {
             {/* 選択中チャンプへの設定ボタン */}
             {selectedMatchupChamp && (
               <div className="bg-gray-700 rounded p-3 mb-4">
-                <p className="text-sm text-gray-300 mb-2"><span className="text-white font-bold">{selectedMatchupChamp}</span> を設定:</p>
+                <p className="text-sm text-gray-300 mb-2"><span className="text-white font-bold">{getDisplayName(selectedMatchupChamp)}</span> {t('matchup.setFor')}</p>
                 <div className="flex gap-2">
                   {(['favorable', 'unfavorable', 'skill', 'none'] as const).map(type => (
                     <button key={type} onClick={() => setMatchupType(selectedMatchupChamp, type)}
@@ -1231,7 +1255,7 @@ export default function Home() {
                           : type === 'unfavorable' ? 'bg-red-800 border-red-400 hover:bg-red-700'
                           : type === 'skill' ? 'bg-yellow-800 border-yellow-400 hover:bg-yellow-700'
                           : 'bg-gray-600 border-gray-500 hover:bg-gray-500'}`}>
-                      {type === 'favorable' ? '▲ 有利' : type === 'unfavorable' ? '▼ 不利' : type === 'skill' ? '● スキル' : '✕ 解除'}
+                      {type === 'favorable' ? t('matchup.favorable') : type === 'unfavorable' ? t('matchup.unfavorable') : type === 'skill' ? t('matchup.skill') : t('matchup.none')}
                     </button>
                   ))}
                 </div>
@@ -1239,9 +1263,9 @@ export default function Home() {
             )}
 
             <div className="flex gap-3">
-              <button onClick={() => saveMatchup(selectedChamp)} className="flex-1 p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">保存</button>
+              <button onClick={() => saveMatchup(selectedChamp)} className="flex-1 p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">{t('save')}</button>
               <button onClick={() => { setSelectedChamp(null); setFavorableSearch(''); setSelectedMatchupChamp(null); setBulkMatchupMode(null) }}
-                className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
+                className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">{t('cancel')}</button>
             </div>
           </div>
         </div>
@@ -1251,14 +1275,14 @@ export default function Home() {
       {showResultForm && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-2 text-yellow-400">試合結果を記録</h2>
-            <p className="text-gray-400 text-sm mb-4">自チャンプ: <span className="text-white font-bold">{resultForm.myChamp}</span></p>
-            <p className="text-sm text-gray-400 mb-2">相手チャンプを選択</p>
-            <input type="text" placeholder="検索..." value={resultForm.enemySearch}
+            <h2 className="text-xl font-bold mb-2 text-yellow-400">{t('result.title')}</h2>
+            <p className="text-gray-400 text-sm mb-4">{t('result.myChamp')}<span className="text-white font-bold">{getDisplayName(resultForm.myChamp)}</span></p>
+            <p className="text-sm text-gray-400 mb-2">{t('result.selectEnemy')}</p>
+            <input type="text" placeholder={t('search')} value={resultForm.enemySearch}
               onChange={e => setResultForm({ ...resultForm, enemySearch: e.target.value })}
               className="w-full p-2 mb-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
             <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto mb-4">
-              {(enemyChamps.length > 0 ? enemyChamps : allChampions).filter(n => n !== resultForm.myChamp && (resultForm.enemySearch === '' || n.includes(resultForm.enemySearch))).map(name => {
+              {(enemyChamps.length > 0 ? enemyChamps : allChampions).filter(n => n !== resultForm.myChamp && matchesSearch(n, resultForm.enemySearch)).map(name => {
                 const wr = matchResults[resultForm.myChamp]?.[name]
                 const wrText = wr ? `${Math.round(wr.wins / wr.total * 100)}%(${wr.total})` : ''
                 return (
@@ -1266,7 +1290,7 @@ export default function Home() {
                     className={`text-xs p-1 rounded flex flex-col items-center gap-1 border transition-all
                       ${resultForm.enemyChamp === name ? 'border-yellow-400 bg-yellow-900' : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
                     {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                    <span className="truncate w-full text-center">{name}</span>
+                    <span className="truncate w-full text-center">{getDisplayName(name)}</span>
                     {wrText && <span className="text-xs text-gray-400">{wrText}</span>}
                   </button>
                 )
@@ -1274,29 +1298,29 @@ export default function Home() {
             </div>
             {resultForm.enemyChamp && (
               <div className="mb-4">
-                <p className="text-sm text-gray-400 mb-2">対 <span className="text-white font-bold">{resultForm.enemyChamp}</span> の結果</p>
+                <p className="text-sm text-gray-400 mb-2">{t('result.vs')}<span className="text-white font-bold">{getDisplayName(resultForm.enemyChamp)}</span></p>
                 {matchResults[resultForm.myChamp]?.[resultForm.enemyChamp] && (
                   <p className="text-sm text-gray-400 mb-2">
-                    現在の勝率: <span className="text-yellow-400 font-bold">
+                    {t('result.currentWR')}<span className="text-yellow-400 font-bold">
                       {Math.round(matchResults[resultForm.myChamp][resultForm.enemyChamp].wins / matchResults[resultForm.myChamp][resultForm.enemyChamp].total * 100)}%
                     </span>
-                    （{matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}勝
-                    {matchResults[resultForm.myChamp][resultForm.enemyChamp].total - matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}敗）
+                    （{matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}{t('result.wins')}
+                    {matchResults[resultForm.myChamp][resultForm.enemyChamp].total - matchResults[resultForm.myChamp][resultForm.enemyChamp].wins}{t('result.losses')}）
                   </p>
                 )}
                 <div className="flex gap-3">
                   <button onClick={() => { saveMatchResult(resultForm.myChamp, resultForm.enemyChamp, 'win'); setShowResultForm(false) }}
                     className="flex-1 p-3 bg-blue-600 hover:bg-blue-500 font-bold rounded text-lg">
-                    勝ち 🏆
+                    {t('result.win')}
                   </button>
                   <button onClick={() => { saveMatchResult(resultForm.myChamp, resultForm.enemyChamp, 'lose'); setShowResultForm(false) }}
                     className="flex-1 p-3 bg-red-700 hover:bg-red-600 font-bold rounded text-lg">
-                    負け 💀
+                    {t('result.lose')}
                   </button>
                 </div>
               </div>
             )}
-            <button onClick={() => setShowResultForm(false)} className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-2">キャンセル</button>
+            <button onClick={() => setShowResultForm(false)} className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-2">{t('cancel')}</button>
           </div>
         </div>
       )}
@@ -1305,33 +1329,39 @@ export default function Home() {
       {showTagManager && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl max-h-screen overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4 text-purple-400">タグ・レーン管理</h2>
+            <h2 className="text-xl font-bold mb-4 text-purple-400">{t('tagLane.title')}</h2>
 
             {!bulkMode ? (
               <>
                 {/* タグセクション */}
                 <div className="mb-6">
-                  <h3 className="text-lg font-bold text-purple-300 mb-3">タグ管理</h3>
-                  <div className="flex gap-2 mb-4">
-                    <input type="text" placeholder="新しいタグ名..." value={newTagName}
-                      onChange={e => setNewTagName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && addTag()}
-                      className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-purple-400" />
-                    <button onClick={addTag} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded font-bold">追加</button>
+                  <h3 className="text-lg font-bold text-purple-300 mb-3">{t('tag.manage')}</h3>
+                  <div className="flex flex-col gap-2 mb-4">
+                    <div className="flex gap-2">
+                      <input type="text" placeholder={t('tag.new.placeholder.ja')} value={newTagNameJa}
+                        onChange={e => setNewTagNameJa(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addTag()}
+                        className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-purple-400" />
+                      <input type="text" placeholder={t('tag.new.placeholder.en')} value={newTagNameEn}
+                        onChange={e => setNewTagNameEn(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addTag()}
+                        className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-purple-400" />
+                      <button onClick={addTag} className="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded font-bold">{t('add')}</button>
+                    </div>
                   </div>
                   <div className="grid gap-2">
                     {TAGS.map(tag => (
                       <div key={`default-${tag}`} className="flex items-center justify-between bg-gray-700 p-3 rounded">
-                        <span className="text-purple-300 font-bold">{tag} <span className="text-xs text-gray-500">（デフォルト）</span></span>
-                        <button onClick={() => openBulkTag(tag)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">チャンプ一括設定</button>
+                        <span className="text-purple-300 font-bold">{getTagDisplayName(tag, lang)} <span className="text-xs text-gray-500">{t('tag.default')}</span></span>
+                        <button onClick={() => openBulkTag(tag)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">{t('tag.bulkSet')}</button>
                       </div>
                     ))}
                     {userTags.map(tag => (
                       <div key={tag.id} className="flex items-center justify-between bg-gray-700 p-3 rounded">
-                        <span className="text-purple-300 font-bold">{tag.name}</span>
+                        <span className="text-purple-300 font-bold">{getTagDisplayName(tag.name, lang)}</span>
                         <div className="flex gap-2">
-                          <button onClick={() => openBulkTag(tag.name)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">チャンプ一括設定</button>
-                          <button onClick={() => deleteTag(tag.id, tag.name)} className="px-3 py-1 bg-red-700 hover:bg-red-600 rounded text-sm">削除</button>
+                          <button onClick={() => openBulkTag(tag.name)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">{t('tag.bulkSet')}</button>
+                          <button onClick={() => deleteTag(tag.id, tag.name)} className="px-3 py-1 bg-red-700 hover:bg-red-600 rounded text-sm">{t('tag.delete')}</button>
                         </div>
                       </div>
                     ))}
@@ -1340,12 +1370,12 @@ export default function Home() {
 
                 {/* レーンセクション */}
                 <div className="mb-4">
-                  <h3 className="text-lg font-bold text-yellow-300 mb-3">レーン一括設定</h3>
+                  <h3 className="text-lg font-bold text-yellow-300 mb-3">{t('lane.bulkSet')}</h3>
                   <div className="grid gap-2">
                     {LANES.filter(l => l !== '全て').map(l => (
                       <div key={l} className="flex items-center justify-between bg-gray-700 p-3 rounded">
                         <span className="text-yellow-300 font-bold">{l}</span>
-                        <button onClick={() => openBulkLane(l)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">チャンプ一括設定</button>
+                        <button onClick={() => openBulkLane(l)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">{t('tag.bulkSet')}</button>
                       </div>
                     ))}
                   </div>
@@ -1354,14 +1384,14 @@ export default function Home() {
             ) : bulkMode === 'tag' ? (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <button onClick={() => { setBulkMode(null); setSelectedTagForBulk(null) }} className="text-gray-400 hover:text-white">← 戻る</button>
-                  <h3 className="text-lg font-bold text-purple-300">「{selectedTagForBulk}」のチャンプ設定</h3>
+                  <button onClick={() => { setBulkMode(null); setSelectedTagForBulk(null) }} className="text-gray-400 hover:text-white">{t('tag.back')}</button>
+                  <h3 className="text-lg font-bold text-purple-300">「{getTagDisplayName(selectedTagForBulk!, lang)}」{t('tag.setting')}</h3>
                 </div>
-                <input type="text" placeholder="検索..." value={bulkSearch}
+                <input type="text" placeholder={t('search')} value={bulkSearch}
                   onChange={e => setBulkSearch(e.target.value)}
                   className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600" />
                 <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto mb-4">
-                  {allChampions.filter(n => bulkSearch === '' || n.includes(bulkSearch)).map(name => {
+                  {allChampions.filter(n => matchesSearch(n, bulkSearch)).map(name => {
                     const isSelected = bulkTagChamps.includes(name)
                     const isInPool = !!getPickInfo(name)
                     return (
@@ -1372,24 +1402,24 @@ export default function Home() {
                             : isInPool ? 'border-yellow-600 bg-gray-700 hover:border-purple-400'
                             : 'border-gray-600 bg-gray-700 hover:border-purple-400'}`}>
                         {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                        <span className="truncate">{name}</span>
+                        <span className="truncate">{getDisplayName(name)}</span>
                       </button>
                     )
                   })}
                 </div>
-                <button onClick={saveBulkTag} className="w-full p-2 bg-purple-600 hover:bg-purple-500 font-bold rounded">保存</button>
+                <button onClick={saveBulkTag} className="w-full p-2 bg-purple-600 hover:bg-purple-500 font-bold rounded">{t('save')}</button>
               </div>
             ) : (
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <button onClick={() => { setBulkMode(null); setSelectedLaneForBulk(null) }} className="text-gray-400 hover:text-white">← 戻る</button>
-                  <h3 className="text-lg font-bold text-yellow-300">「{selectedLaneForBulk}」のチャンプ設定</h3>
+                  <button onClick={() => { setBulkMode(null); setSelectedLaneForBulk(null) }} className="text-gray-400 hover:text-white">{t('tag.back')}</button>
+                  <h3 className="text-lg font-bold text-yellow-300">「{selectedLaneForBulk}」{t('lane.setting')}</h3>
                 </div>
-                <input type="text" placeholder="検索..." value={bulkSearch}
+                <input type="text" placeholder={t('search')} value={bulkSearch}
                   onChange={e => setBulkSearch(e.target.value)}
                   className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600" />
                 <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto mb-4">
-                  {allChampions.filter(n => bulkSearch === '' || n.includes(bulkSearch)).map(name => {
+                  {allChampions.filter(n => matchesSearch(n, bulkSearch)).map(name => {
                     const currentLanes = bulkLaneChamps[name] || []
                     const isSelected = currentLanes.includes(selectedLaneForBulk!)
                     const isInPool = !!getPickInfo(name)
@@ -1405,17 +1435,17 @@ export default function Home() {
                             : isInPool ? 'border-blue-500 bg-gray-700 hover:border-yellow-400'
                             : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
                         {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                        <span className="truncate">{name}</span>
+                        <span className="truncate">{getDisplayName(name)}</span>
                       </button>
                     )
                   })}
                 </div>
-                <button onClick={saveBulkLane} className="w-full p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">保存</button>
+                <button onClick={saveBulkLane} className="w-full p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">{t('save')}</button>
               </div>
             )}
 
             <button onClick={() => { setShowTagManager(false); setBulkMode(null); setSelectedTagForBulk(null); setSelectedLaneForBulk(null) }}
-              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-3">閉じる</button>
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-3">{t('close')}</button>
           </div>
         </div>
       )}
@@ -1423,23 +1453,23 @@ export default function Home() {
       {showUserList && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
-            <h2 className="text-xl font-bold mb-4 text-blue-400">👥 みんなのピックプール</h2>
-            <input type="text" placeholder="ユーザー名で検索..." value={userListSearch}
+            <h2 className="text-xl font-bold mb-4 text-blue-400">{t('userlist.title')}</h2>
+            <input type="text" placeholder={t('userlist.search')} value={userListSearch}
               onChange={e => setUserListSearch(e.target.value)}
               className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-blue-400" />
             <div className="grid gap-2 max-h-96 overflow-y-auto mb-4">
-              {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).length === 0 && 
-                <p className="text-gray-500 text-center py-4">ユーザーが見つかりません</p>}
+              {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).length === 0 &&
+                <p className="text-gray-500 text-center py-4">{t('userlist.notFound')}</p>}
               {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).map(u => (
                 <button key={u.id} onClick={() => { router.push(`/user/${u.username}`); setShowUserList(false) }}
                   className="flex items-center justify-between bg-gray-700 hover:bg-gray-600 p-3 rounded transition-all">
                   <span className="font-bold text-white">{u.username}</span>
-                  <span className="text-gray-400 text-sm">閲覧 →</span>
+                  <span className="text-gray-400 text-sm">{t('userlist.view')}</span>
                 </button>
               ))}
             </div>
             <button onClick={() => { setShowUserList(false); setUserListSearch('') }}
-              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">{t('close')}</button>
           </div>
         </div>
       )}
@@ -1448,7 +1478,7 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
             <h2 className="text-lg font-bold mb-4 text-teal-400">
-              {lolalyticsChamp} の対面を選択
+              {getDisplayName(lolalyticsChamp)}{t('counterbuild.select')}
             </h2>
             <div className="grid gap-2 max-h-72 overflow-y-auto mb-4">
               {enemyChamps.map(enemy => (
@@ -1458,13 +1488,13 @@ export default function Home() {
                 }}
                   className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 p-3 rounded transition-all">
                   {getChampionIcon(enemy) && <img src={getChampionIcon(enemy)} alt={enemy} className="w-6 h-6 rounded-full" />}
-                  <span className="font-bold text-white">vs {enemy}</span>
-                  <span className="text-gray-400 text-sm ml-auto">開く →</span>
+                  <span className="font-bold text-white">vs {getDisplayName(enemy)}</span>
+                  <span className="text-gray-400 text-sm ml-auto">{t('counterbuild.open')}</span>
                 </button>
               ))}
             </div>
             <button onClick={() => setShowLolalyticsModal(false)}
-              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">{t('close')}</button>
           </div>
         </div>
       )}
@@ -1472,15 +1502,15 @@ export default function Home() {
       {showRiotIdModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
-            <h2 className="text-xl font-bold mb-2 text-orange-400">RiotIDを設定</h2>
-            <p className="text-sm text-gray-400 mb-4">例: Haru / JP1</p>
+            <h2 className="text-xl font-bold mb-2 text-orange-400">{t('riotid.title')}</h2>
+            <p className="text-sm text-gray-400 mb-4">{t('riotid.desc')}</p>
             <div className="flex items-center gap-2 mb-4">
-              <input type="text" placeholder="サモナーネーム"
+              <input type="text" placeholder={t('riotid.summoner')}
                 value={newRiotIdName}
                 onChange={e => setNewRiotIdName(e.target.value)}
                 className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-orange-400" />
               <span className="text-gray-400 font-bold">#</span>
-              <input type="text" placeholder="タグライン"
+              <input type="text" placeholder={t('riotid.tagline')}
                 value={newRiotIdTag}
                 onChange={e => setNewRiotIdTag(e.target.value)}
                 className="w-24 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-orange-400" />
@@ -1490,9 +1520,9 @@ export default function Home() {
                 if (!newRiotIdName.trim() || !newRiotIdTag.trim()) return
                 const combined = `${newRiotIdName.trim()}#${newRiotIdTag.trim()}`
                 saveRiotId(combined)
-              }} className="flex-1 p-2 bg-orange-400 text-gray-900 font-bold rounded hover:bg-orange-300">保存</button>
+              }} className="flex-1 p-2 bg-orange-400 text-gray-900 font-bold rounded hover:bg-orange-300">{t('save')}</button>
               <button onClick={() => setShowRiotIdModal(false)}
-                className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">キャンセル</button>
+                className="flex-1 p-2 bg-gray-700 rounded hover:bg-gray-600">{t('cancel')}</button>
             </div>
           </div>
         </div>
@@ -1500,8 +1530,6 @@ export default function Home() {
       {/* スコア詳細モーダル */}
       {showScoreDetail && (() => {
         const mu = matchups[showScoreDetail]
-        const activeEnemies = enemyChamps.filter(e => !bannedChamps.has(e))
-        const bannedEnemies = enemyChamps.filter(e => bannedChamps.has(e))
         const currentScore = getCounterScore(showScoreDetail)
         const scoreWithoutBans = (() => {
           if (!mu) return 0
@@ -1519,15 +1547,15 @@ export default function Home() {
               <div className="flex items-center gap-3 mb-4">
                 {getChampionIcon(showScoreDetail) && <img src={getChampionIcon(showScoreDetail)} alt={showScoreDetail} className="w-10 h-10 rounded-full" />}
                 <div>
-                  <h2 className="text-lg font-bold text-white">{showScoreDetail}</h2>
+                  <h2 className="text-lg font-bold text-white">{getDisplayName(showScoreDetail)}</h2>
                   <div className="flex items-center gap-2">
                     <span className={`text-sm font-bold ${currentScore > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      現在: {currentScore > 0 ? `+${currentScore}` : currentScore}
+                      {t('score.current')}{currentScore > 0 ? `+${currentScore}` : currentScore}
                     </span>
                     {scoreWithoutBans !== currentScore && (
                       <span className="text-xs text-gray-400">
-                        （BAN前: {scoreWithoutBans > 0 ? `+${scoreWithoutBans}` : scoreWithoutBans}）
-                        <span className="text-yellow-400 ml-1">↑BAN効果あり</span>
+                        （{t('score.beforeBan')}{scoreWithoutBans > 0 ? `+${scoreWithoutBans}` : scoreWithoutBans}）
+                        <span className="text-yellow-400 ml-1">{t('score.banEffect')}</span>
                       </span>
                     )}
                   </div>
@@ -1551,17 +1579,17 @@ export default function Home() {
                           : 'border-gray-600 bg-gray-700'}`}>
                       <div className="flex items-center gap-2">
                         {getChampionIcon(enemy) && <img src={getChampionIcon(enemy)} alt={enemy} className={`w-7 h-7 rounded-full ${isBanned ? 'grayscale' : ''}`} />}
-                        <span className={`text-sm font-bold ${isBanned ? 'line-through text-gray-500' : 'text-white'}`}>{enemy}</span>
+                        <span className={`text-sm font-bold ${isBanned ? 'line-through text-gray-500' : 'text-white'}`}>{getDisplayName(enemy)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-bold
                           ${isSkill ? 'text-yellow-400' : isFavorable ? 'text-green-400' : isUnfavorable ? 'text-red-400' : 'text-gray-500'}`}>
-                          {isSkill ? '● スキル' : isFavorable ? '▲ 有利' : isUnfavorable ? '▼ 不利' : '− ニュートラル'}
+                          {isSkill ? t('matchup.skill') : isFavorable ? t('matchup.favorable') : isUnfavorable ? t('matchup.unfavorable') : t('matchup.neutral')}
                         </span>
                         {!isBanned && (isUnfavorable || isSkill) && (
-                          <span className="text-xs text-red-300 bg-red-900 px-1 rounded">BANで↑</span>
+                          <span className="text-xs text-red-300 bg-red-900 px-1 rounded">{t('score.banUp')}</span>
                         )}
-                        {isBanned && <span className="text-xs text-gray-500">BAN済</span>}
+                        {isBanned && <span className="text-xs text-gray-500">{t('score.banned')}</span>}
                       </div>
                     </button>
                   )
@@ -1569,7 +1597,7 @@ export default function Home() {
               </div>
 
               <button onClick={() => setShowScoreDetail(null)}
-                className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
+                className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">{t('close')}</button>
             </div>
           </div>
         )

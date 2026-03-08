@@ -3,12 +3,14 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
+import { useLanguage } from '@/components/LanguageContext'
 
 function ConfirmContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
+  const { t } = useLanguage()
 
   useEffect(() => {
     // エラーパラメータがある場合
@@ -26,7 +28,7 @@ function ConfirmContent() {
         const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as any })
         if (error) {
           setStatus('error')
-          } 
+          }
           else {
             setStatus('success')
             setTimeout(() => router.push('/'), 2000)
@@ -92,23 +94,23 @@ function ConfirmContent() {
   return (
     <div className="bg-gray-800 p-8 rounded-lg text-center max-w-md w-full">
       {status === 'loading' && (
-        <p className="text-gray-400 text-lg">確認中...</p>
+        <p className="text-gray-400 text-lg">{t('auth.loading')}</p>
       )}
       {status === 'success' && (
         <>
           <p className="text-4xl mb-4">✅</p>
-          <h1 className="text-2xl font-bold text-green-400 mb-2">ログイン完了！</h1>
-          <p className="text-gray-400">2秒後にアプリに移動します...</p>
+          <h1 className="text-2xl font-bold text-green-400 mb-2">{t('auth.success.title')}</h1>
+          <p className="text-gray-400">{t('auth.success.desc')}</p>
         </>
       )}
       {status === 'error' && (
         <>
           <p className="text-4xl mb-4">❌</p>
-          <h1 className="text-2xl font-bold text-red-400 mb-2">認証に失敗しました</h1>
-          <p className="text-gray-400 mb-4">もう一度お試しください。</p>
+          <h1 className="text-2xl font-bold text-red-400 mb-2">{t('auth.error.title')}</h1>
+          <p className="text-gray-400 mb-4">{t('auth.error.desc')}</p>
           <button onClick={() => router.push('/login')}
             className="px-4 py-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
-            ログインページへ
+            {t('auth.error.btn')}
           </button>
         </>
       )}
@@ -119,7 +121,7 @@ function ConfirmContent() {
 export default function ConfirmPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
-      <Suspense fallback={<p className="text-gray-400">読み込み中...</p>}>
+      <Suspense fallback={<p className="text-gray-400">{/* loading */}Loading...</p>}>
         <ConfirmContent />
       </Suspense>
     </div>
