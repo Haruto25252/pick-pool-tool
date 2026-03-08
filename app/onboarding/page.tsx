@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/components/LanguageContext'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 
 export default function OnboardingPage() {
   const [username, setUsername] = useState('')
@@ -13,6 +15,7 @@ export default function OnboardingPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useLanguage()
 
   useEffect(() => {
     const check = async () => {
@@ -43,7 +46,7 @@ export default function OnboardingPage() {
         riot_id: riotId.trim() || null
       }, { onConflict: 'id' })
       if (error) {
-        setUsernameError('このユーザー名は既に使われています')
+        setUsernameError(t('onboarding.error.taken'))
         setLoading(false)
         return
       }
@@ -69,17 +72,20 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
       <div className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold text-yellow-400 mb-2 text-center">Pick Pool Tool へようこそ！</h1>
-        <p className="text-gray-400 text-sm text-center mb-8">プロフィールを設定しましょう。後からでも変更できます。</p>
+        <h1 className="text-2xl font-bold text-yellow-400 mb-2 text-center">{t('onboarding.title')}</h1>
+        <p className="text-gray-400 text-sm text-center mb-8">{t('onboarding.subtitle')}</p>
 
         <div className="mb-6">
           <label className="block text-sm font-bold text-gray-300 mb-1">
-            ユーザー名 <span className="text-gray-500 font-normal">（任意）</span>
+            {t('onboarding.username.label')} <span className="text-gray-500 font-normal">{t('onboarding.optional')}</span>
           </label>
-          <p className="text-xs text-gray-500 mb-2">他のユーザーがあなたのピックプールを閲覧できるURLになります</p>
-          <input type="text" placeholder="例: はるん" value={username}
+          <p className="text-xs text-gray-500 mb-2">{t('onboarding.username.desc')}</p>
+          <input type="text" placeholder={t('onboarding.username.placeholder')} value={username}
             onChange={e => { setUsername(e.target.value); setUsernameError('') }}
             className="w-full p-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
           {usernameError && <p className="text-red-400 text-sm mt-1">{usernameError}</p>}
@@ -87,17 +93,17 @@ export default function OnboardingPage() {
 
         <div className="mb-8">
           <label className="block text-sm font-bold text-gray-300 mb-1">
-            Riot ID <span className="text-gray-500 font-normal">（任意）</span>
+            {t('onboarding.riotid.label')} <span className="text-gray-500 font-normal">{t('onboarding.optional')}</span>
           </label>
-          <p className="text-xs text-gray-500 mb-2">OP.GGへのリンクに使用されます</p>
-          <input type="text" placeholder="例: はるん#JP1" value={riotId}
+          <p className="text-xs text-gray-500 mb-2">{t('onboarding.riotid.desc')}</p>
+          <input type="text" placeholder={t('onboarding.riotid.placeholder')} value={riotId}
             onChange={e => setRiotId(e.target.value)}
             className="w-full p-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
         </div>
 
         <button onClick={save} disabled={loading}
           className="w-full p-3 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300 disabled:opacity-50">
-          {loading ? '保存中...' : '始める →'}
+          {loading ? t('onboarding.saving') : t('onboarding.save')}
         </button>
 
         <label className="flex items-center gap-2 mt-4 cursor-pointer select-none">
@@ -107,12 +113,12 @@ export default function OnboardingPage() {
             onChange={e => setDoNotShow(e.target.checked)}
             className="w-4 h-4 accent-yellow-400"
           />
-          <span className="text-sm text-gray-400">今後このメッセージを表示しない</span>
+          <span className="text-sm text-gray-400">{t('onboarding.skip.doNotShow')}</span>
         </label>
 
         <button onClick={handleSkip}
           className="w-full p-3 mt-2 bg-gray-700 text-gray-400 rounded hover:bg-gray-600 text-sm">
-          閉じる（スキップ）
+          {t('onboarding.skip')}
         </button>
       </div>
     </div>

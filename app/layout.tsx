@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Providers } from '@/components/Providers'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}>
+      <Providers>
       {children}
         <footer className="bg-gray-900 pb-6 flex flex-col items-center gap-2 text-gray-600">
           <div className="flex gap-4">
@@ -58,6 +60,7 @@ export default function RootLayout({
         <p className="text-xs">© 2026 Produced by Harun</p>
       </footer>
       <SpeedInsights />
+      </Providers>
       </body>
     </html>
   );

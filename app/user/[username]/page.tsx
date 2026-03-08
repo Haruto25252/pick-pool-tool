@@ -6,6 +6,9 @@ import { useParams, useRouter } from 'next/navigation'
 import { getChampionIcon, championMap } from '@/lib/champions'
 import { PRIORITY_MULTIPLIERS } from '@/lib/constants'
 import { Tooltip } from '@/components/Tooltip'
+import { useLanguage } from '@/components/LanguageContext'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { getTagDisplayName } from '@/lib/i18n'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
 const TAGS = ['ファイター', 'タンク', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'エンチャンター', 'メイジ', 'ダイブ', 'ピール', 'スプリット', 'スケーリング', 'アーリーゲーム']
@@ -34,6 +37,7 @@ export default function UserPage() {
   const { username } = useParams<{ username: string }>()
   const router = useRouter()
   const supabase = createClient()
+  const { lang, t } = useLanguage()
 
   const [targetUserId, setTargetUserId] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
@@ -58,6 +62,17 @@ export default function UserPage() {
   const [targetRiotId, setTargetRiotId] = useState<string | null>(null)
 
   const allChampions = Object.keys(championMap)
+
+  const getDisplayName = (jaName: string) => lang === 'en' ? (championMap[jaName] || jaName) : jaName
+
+  const matchesSearch = (name: string, query: string) => {
+    if (query === '') return true
+    if (lang === 'en') {
+      return name.toLowerCase().includes(query.toLowerCase()) ||
+        (championMap[name] || '').toLowerCase().includes(query.toLowerCase())
+    }
+    return name.includes(query)
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -112,13 +127,13 @@ export default function UserPage() {
 
   const fetchMastery = async () => {
     if (!targetRiotId) {
-      alert('このユーザーはRiotIDを設定していません')
+      alert(t('userPage.noRiotId'))
       return
     }
     const res = await fetch(`/api/mastery?riotId=${encodeURIComponent(targetRiotId)}`)
     const data = await res.json()
     if (data.error) {
-      alert('マスタリー取得に失敗しました: ' + data.error)
+      alert(t('champ.loadingMastery') + data.error)
       return
     }
     setMasteryData(data.mastery)
@@ -183,7 +198,7 @@ export default function UserPage() {
 
   const filtered = baseChampions.filter(name => {
     if (viewMode === 'counter' && getPoolCounterScore(name, lane) <= 0) return false
-    if (search !== '' && !name.includes(search)) return false
+    if (!matchesSearch(name, search)) return false
     const lanes = getChampionLanes(name)
     if (lane !== '全て' && lanes.length > 0 && !lanes.includes(lane)) return false
     if (selectedTag !== '全て' && !getChampionTags(name).includes(selectedTag)) return false
@@ -200,8 +215,8 @@ export default function UserPage() {
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
       <div className="text-center">
         <p className="text-4xl mb-4">😢</p>
-        <h1 className="text-2xl font-bold text-red-400 mb-2">ユーザーが見つかりません</h1>
-        <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-yellow-400 text-gray-900 font-bold rounded">トップへ</button>
+        <h1 className="text-2xl font-bold text-red-400 mb-2">{t('userPage.notFound')}</h1>
+        <button onClick={() => router.push('/')} className="mt-4 px-4 py-2 bg-yellow-400 text-gray-900 font-bold rounded">{t('userPage.goTop')}</button>
       </div>
     </div>
   )
@@ -211,21 +226,22 @@ export default function UserPage() {
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-yellow-400">{decodeURIComponent(username)} のピックプール</h1>
-            <p className="text-xs text-gray-400">閲覧モード（編集不可）</p>
+            <h1 className="text-2xl font-bold text-yellow-400">{decodeURIComponent(username)}{t('userPage.pickPool')}</h1>
+            <p className="text-xs text-gray-400">{t('userPage.viewOnly')}</p>
           </div>
             <div className="flex gap-2 flex-wrap justify-end">
+              <LanguageSwitcher />
               <button onClick={() => setShowUserList(true)}
                 className="px-3 py-2 bg-blue-700 rounded hover:bg-blue-600 text-sm font-bold">
-                👥 みんなのプール
+                {t('userPage.everyonePool')}
               </button>
               <button onClick={() => setBannedChamps(new Set())}
                 className="px-3 py-2 bg-red-700 rounded hover:bg-red-600 text-sm font-bold">
-                BANリセット {bannedChamps.size > 0 && `(${bannedChamps.size})`}
+                {t('ban.reset')} {bannedChamps.size > 0 && `(${bannedChamps.size})`}
               </button>
               <button onClick={() => router.push('/')}
                 className="px-3 py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm">
-                自分のページへ
+                {t('userPage.myPage')}
               </button>
             </div>
         </div>
@@ -233,7 +249,7 @@ export default function UserPage() {
         {/* 相手チャンプ */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-gray-400 font-bold">相手チャンプ:</span>
+            <span className="text-sm text-gray-400 font-bold">{t('enemy.label')}</span>
             {enemyChamps.map(name => (
               <button key={name} onClick={() => toggleBan(name)}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-sm border transition-all
@@ -241,15 +257,15 @@ export default function UserPage() {
                     ? 'opacity-50 border-red-700 bg-red-950'
                     : 'bg-red-900 border-red-500 hover:bg-red-800'}`}>
                 {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className={`w-5 h-5 rounded-full ${bannedChamps.has(name) ? 'grayscale' : ''}`} />}
-                <span className={bannedChamps.has(name) ? 'line-through text-red-300' : ''}>{name}</span>
+                <span className={bannedChamps.has(name) ? 'line-through text-red-300' : ''}>{getDisplayName(name)}</span>
                 {bannedChamps.has(name)
-                  ? <span className="text-red-300 ml-1 text-xs">BAN済</span>
-                  : <span className="text-gray-400 ml-1 text-xs">BANする</span>}
+                  ? <span className="text-red-300 ml-1 text-xs">{t('enemy.banned')}</span>
+                  : <span className="text-gray-400 ml-1 text-xs">{t('enemy.toBan')}</span>}
               </button>
             ))}
-            <button onClick={() => setShowEnemyPicker(true)} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm">+ 追加</button>
+            <button onClick={() => setShowEnemyPicker(true)} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm">{t('enemy.add')}</button>
             {enemyChamps.length > 0 && (
-              <button onClick={() => setEnemyChamps([])} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-400">クリア</button>
+              <button onClick={() => setEnemyChamps([])} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-400">{t('enemy.clear')}</button>
             )}
           </div>
         </div>
@@ -257,16 +273,16 @@ export default function UserPage() {
         {/* BAN欄 */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm text-red-400 font-bold">🚫 BAN:</span>
+            <span className="text-sm text-red-400 font-bold">{t('ban.label')}</span>
             {Array.from(bannedChamps).map(name => (
               <button key={name} onClick={() => toggleBan(name)}
                 className="flex items-center gap-1 bg-red-900 border border-red-500 px-2 py-1 rounded text-sm hover:bg-red-800 opacity-60">
                 {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-5 h-5 rounded-full grayscale" />}
-                <span className="line-through text-red-300">{name}</span>
+                <span className="line-through text-red-300">{getDisplayName(name)}</span>
                 <span className="text-red-300 ml-1">×</span>
               </button>
             ))}
-            {bannedChamps.size === 0 && <span className="text-xs text-gray-500">なし</span>}
+            {bannedChamps.size === 0 && <span className="text-xs text-gray-500">{t('none')}</span>}
           </div>
         </div>
 
@@ -274,41 +290,41 @@ export default function UserPage() {
         <div className="flex gap-2 mb-3 flex-wrap">
           <button onClick={() => setViewMode('pool')}
             className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-            ピックプール
+            {t('view.pool')}
           </button>
           <button onClick={fetchMastery}
             className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-            マスタリー順
+            {t('view.mastery')}
           </button>
-          <Tooltip text="このピックプールに対するカウンターチャンピオンたちを並べます">
+          <Tooltip text={t('view.counter.user.tooltip')}>
             <button onClick={() => setViewMode('counter')}
               className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'counter' ? 'bg-teal-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-              カウンター
+              {t('view.counter')}
             </button>
           </Tooltip>
         </div>
         {/* フィルター */}
         <div className="mb-4">
-          <input type="text" placeholder="チャンピオン名で検索..."
+          <input type="text" placeholder={t('search')}
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full p-3 mb-3 rounded bg-gray-800 text-white border border-gray-700 focus:border-yellow-400 focus:outline-none" />
           <div className="flex gap-2 flex-wrap mb-2">
             {LANES.map(l => (
               <button key={l} onClick={() => setLane(l)}
                 className={`px-3 py-1 rounded font-bold text-sm ${lane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                {l}
+                {l === '全て' ? t('all') : l}
               </button>
             ))}
           </div>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setSelectedTag('全て')}
               className={`px-3 py-1 rounded font-bold text-sm ${selectedTag === '全て' ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
-              全て
+              {t('all')}
             </button>
             {allTags.map(tag => (
               <button key={tag} onClick={() => setSelectedTag(tag)}
                 className={`px-3 py-1 rounded font-bold text-sm ${selectedTag === tag ? 'bg-purple-500 text-white' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                {tag}
+                {getTagDisplayName(tag, lang)}
               </button>
             ))}
           </div>
@@ -362,15 +378,15 @@ export default function UserPage() {
                 <div className="relative">
                   {iconUrl
                     ? <img src={iconUrl} alt={name} className="w-12 h-12 rounded-full" />
-                    : <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xs text-center">{name}</div>
+                    : <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xs text-center">{getDisplayName(name)}</div>
                   }
                 </div>
-                <p className="text-xs text-center font-bold leading-tight text-yellow-400">{name}</p>
+                <p className="text-xs text-center font-bold leading-tight text-yellow-400">{getDisplayName(name)}</p>
                 {champLanes.length > 0 && <p className="text-xs text-gray-400">{champLanes.join(' / ')}</p>}
                 {champTags.length > 0 && (
                   <div className="flex flex-wrap gap-1 justify-center">
                     {champTags.map(tag => (
-                      <span key={tag} className="text-xs bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>
+                      <span key={tag} className="text-xs bg-purple-900 text-purple-300 px-1 rounded">{getTagDisplayName(tag, lang)}</span>
                     ))}
                   </div>
                 )}
@@ -381,7 +397,11 @@ export default function UserPage() {
                   </div>
                 )}
                 {viewMode === 'mastery' && masteryData[name] && (
-                  <p className="text-xs text-gray-500">{(masteryData[name] / 10000).toFixed(0)}万pts</p>
+                  <p className="text-xs text-gray-500">
+                    {lang === 'en'
+                      ? `${(masteryData[name] / 1000).toFixed(0)}k pts`
+                      : `${(masteryData[name] / 10000).toFixed(0)}万pts`}
+                  </p>
                 )}
               </div>
             )
@@ -404,32 +424,32 @@ export default function UserPage() {
               <div className="flex items-center gap-3 mb-4">
                 {getChampionIcon(champName) && <img src={getChampionIcon(champName)} alt={champName} className="w-10 h-10 rounded-full" />}
                 <div>
-                  <h2 className="text-lg font-bold text-white">{champName}</h2>
+                  <h2 className="text-lg font-bold text-white">{getDisplayName(champName)}</h2>
                   <span className="text-sm text-red-400 font-bold">
-                    脅威スコア: {(() => { const s = getPoolCounterScore(champName, lane); return s % 1 === 0 ? s : s.toFixed(1) })()}
+                    {t('score.threat')}{(() => { const s = getPoolCounterScore(champName, lane); return s % 1 === 0 ? s : s.toFixed(1) })()}
                   </span>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mb-3">このチャンピオンに不利なピックプール</p>
+              <p className="text-xs text-gray-400 mb-3">{t('score.unfavorable.user')}</p>
               <div className="grid gap-2 max-h-80 overflow-y-auto">
                 {counteredPool.map(p => (
                   <div key={p.champion_name} className="flex items-center gap-2 p-2 rounded border border-red-500 bg-red-950">
                     {getChampionIcon(p.champion_name) && <img src={getChampionIcon(p.champion_name)} alt={p.champion_name} className="w-7 h-7 rounded-full" />}
-                    <span className="text-sm font-bold text-white">{p.champion_name}</span>
-                    <span className="text-xs text-gray-400 ml-1">理解度{p.priority}</span>
-                    <span className="text-xs text-red-400 ml-auto">▼ 不利</span>
+                    <span className="text-sm font-bold text-white">{getDisplayName(p.champion_name)}</span>
+                    <span className="text-xs text-gray-400 ml-1">{lang === 'ja' ? `理解度${p.priority}` : `Mastery ${p.priority}`}</span>
+                    <span className="text-xs text-red-400 ml-auto">{t('score.unfavorable.label')}</span>
                   </div>
                 ))}
                 {safePool.map(p => (
                   <div key={p.champion_name} className="flex items-center gap-2 p-2 rounded border border-gray-600 bg-gray-700 opacity-40">
                     {getChampionIcon(p.champion_name) && <img src={getChampionIcon(p.champion_name)} alt={p.champion_name} className="w-7 h-7 rounded-full" />}
-                    <span className="text-sm font-bold text-gray-400">{p.champion_name}</span>
-                    <span className="text-xs text-gray-500 ml-auto">− 有利/互角</span>
+                    <span className="text-sm font-bold text-gray-400">{getDisplayName(p.champion_name)}</span>
+                    <span className="text-xs text-gray-500 ml-auto">{t('score.advantage')}</span>
                   </div>
                 ))}
               </div>
               <button onClick={() => setShowCounterScoreDetail(null)}
-                className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
+                className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">{t('close')}</button>
             </div>
           </div>
         )
@@ -439,26 +459,26 @@ export default function UserPage() {
       {showEnemyPicker && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl max-h-screen overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4 text-red-400">相手チャンプを選択</h2>
-            <input type="text" placeholder="検索..." value={enemySearch}
+            <h2 className="text-xl font-bold mb-4 text-red-400">{t('enemy.picker.title')}</h2>
+            <input type="text" placeholder={t('search')} value={enemySearch}
               onChange={e => setEnemySearch(e.target.value)}
               className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
             <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto mb-4">
-              {allChampions.filter(n => enemySearch === '' || n.includes(enemySearch)).map(name => {
+              {allChampions.filter(n => enemySearch === '' || matchesSearch(n, enemySearch)).map(name => {
                 const isSelected = enemyChamps.includes(name)
                 return (
                   <button key={name} onClick={() => toggleEnemy(name)}
                     className={`text-xs p-2 rounded flex items-center gap-1 border transition-all
                       ${isSelected ? 'border-red-400 bg-red-900' : 'border-gray-600 bg-gray-700 hover:border-red-400'}`}>
                     {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                    <span className="truncate">{name}</span>
+                    <span className="truncate">{getDisplayName(name)}</span>
                   </button>
                 )
               })}
             </div>
             <button onClick={() => { setShowEnemyPicker(false); setEnemySearch('') }}
               className="w-full p-2 bg-yellow-400 text-gray-900 font-bold rounded hover:bg-yellow-300">
-              完了
+              {t('done')}
             </button>
           </div>
         </div>
@@ -467,23 +487,23 @@ export default function UserPage() {
       {showUserList && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-sm">
-            <h2 className="text-xl font-bold mb-4 text-blue-400">👥 みんなのピックプール</h2>
-            <input type="text" placeholder="ユーザー名で検索..." value={userListSearch}
+            <h2 className="text-xl font-bold mb-4 text-blue-400">{t('userlist.title')}</h2>
+            <input type="text" placeholder={t('userlist.search')} value={userListSearch}
               onChange={e => setUserListSearch(e.target.value)}
               className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-blue-400" />
             <div className="grid gap-2 max-h-96 overflow-y-auto mb-4">
               {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).length === 0 &&
-                <p className="text-gray-500 text-center py-4">ユーザーが見つかりません</p>}
+                <p className="text-gray-500 text-center py-4">{t('userlist.notFound')}</p>}
               {userList.filter(u => userListSearch === '' || u.username.includes(userListSearch)).map(u => (
                 <button key={u.id} onClick={() => { router.push(`/user/${u.username}`); setShowUserList(false) }}
                   className={`flex items-center justify-between p-3 rounded transition-all border ${u.username === decodeURIComponent(username) ? 'bg-blue-900 border-blue-400' : 'bg-gray-700 hover:bg-gray-600 border-transparent'}`}>
                   <span className="font-bold text-white">{u.username}</span>
-                  <span className="text-gray-400 text-sm">{u.username === decodeURIComponent(username) ? '表示中' : '閲覧 →'}</span>
+                  <span className="text-gray-400 text-sm">{u.username === decodeURIComponent(username) ? t('userlist.viewing') : t('userlist.view')}</span>
                 </button>
               ))}
             </div>
             <button onClick={() => { setShowUserList(false); setUserListSearch('') }}
-              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">閉じる</button>
+              className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600">{t('close')}</button>
           </div>
         </div>
       )}
@@ -507,15 +527,15 @@ export default function UserPage() {
               <div className="flex items-center gap-3 mb-4">
                 {getChampionIcon(showScoreDetail) && <img src={getChampionIcon(showScoreDetail)} alt={showScoreDetail} className="w-10 h-10 rounded-full" />}
                 <div>
-                  <h2 className="text-lg font-bold text-white">{showScoreDetail}</h2>
+                  <h2 className="text-lg font-bold text-white">{getDisplayName(showScoreDetail)}</h2>
                   <div className="flex items-center gap-2">
                     <span className={`text-sm font-bold ${currentScore > 0 ? 'text-green-400' : currentScore < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                      現在: {currentScore > 0 ? `+${currentScore}` : currentScore === 0 ? '±0' : currentScore}
+                      {t('score.current')}{currentScore > 0 ? `+${currentScore}` : currentScore === 0 ? '±0' : currentScore}
                     </span>
                     {scoreWithoutBans !== currentScore && (
                       <span className="text-xs text-gray-400">
-                        （BAN前: {scoreWithoutBans > 0 ? `+${scoreWithoutBans}` : scoreWithoutBans}）
-                        <span className="text-yellow-400 ml-1">↑BAN効果あり</span>
+                        （{t('score.beforeBan')}{scoreWithoutBans > 0 ? `+${scoreWithoutBans}` : scoreWithoutBans}）
+                        <span className="text-yellow-400 ml-1">{t('score.banEffect')}</span>
                       </span>
                     )}
                   </div>
@@ -539,17 +559,17 @@ export default function UserPage() {
                           : 'border-gray-600 bg-gray-700'}`}>
                       <div className="flex items-center gap-2">
                         {getChampionIcon(enemy) && <img src={getChampionIcon(enemy)} alt={enemy} className={`w-7 h-7 rounded-full ${isBanned ? 'grayscale' : ''}`} />}
-                        <span className={`text-sm font-bold ${isBanned ? 'line-through text-gray-500' : 'text-white'}`}>{enemy}</span>
+                        <span className={`text-sm font-bold ${isBanned ? 'line-through text-gray-500' : 'text-white'}`}>{getDisplayName(enemy)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`text-xs font-bold
                           ${isSkill ? 'text-yellow-400' : isFavorable ? 'text-green-400' : isUnfavorable ? 'text-red-400' : 'text-gray-500'}`}>
-                          {isSkill ? '● スキル' : isFavorable ? '▲ 有利' : isUnfavorable ? '▼ 不利' : '− ニュートラル'}
+                          {isSkill ? t('matchup.skill') : isFavorable ? t('matchup.favorable') : isUnfavorable ? t('matchup.unfavorable') : t('matchup.neutral')}
                         </span>
                         {!isBanned && (isUnfavorable || isSkill) && (
-                          <span className="text-xs text-red-300 bg-red-900 px-1 rounded">BANで↑</span>
+                          <span className="text-xs text-red-300 bg-red-900 px-1 rounded">{t('score.banUp')}</span>
                         )}
-                        {isBanned && <span className="text-xs text-gray-500">BAN済</span>}
+                        {isBanned && <span className="text-xs text-gray-500">{t('score.banned')}</span>}
                       </div>
                     </button>
                   )
@@ -557,7 +577,7 @@ export default function UserPage() {
               </div>
 
               <button onClick={() => setShowScoreDetail(null)}
-                className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">閉じる</button>
+                className="w-full p-2 bg-gray-700 rounded hover:bg-gray-600 mt-4">{t('close')}</button>
             </div>
           </div>
         )
