@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { getChampionIcon, championMap } from '@/lib/champions'
 import { PRIORITY_MULTIPLIERS } from '@/lib/constants'
 import { ExternalLink, Pencil, Link, Users, Swords, LogOut } from 'lucide-react'
+import { Tooltip } from '@/components/Tooltip'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
 const TAGS = ['ファイター', 'タンク', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'スケーリング']
@@ -577,16 +578,13 @@ export default function Home() {
           <div className="flex gap-2 flex-wrap justify-end">
             {riotId ? (
               <div className="flex gap-1">
-                <div className="relative group/opgghdr">
+                <Tooltip text="あなたのプロフィールを開きます" position="bottom">
                   <button onClick={() => window.open(`https://www.op.gg/summoners/jp/${encodeURIComponent(riotId.replace('#', '-'))}`, '_blank')}
                     className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded hover:bg-orange-700 text-sm flex items-center gap-1">
                     OP.GG <ExternalLink size={12} />
                   </button>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opgghdr:opacity-100 transition-opacity z-20 pointer-events-none">
-                    あなたのプロフィールを開きます
-                  </div>
-                </div>
-                <div className="relative group/opggEdit">
+                </Tooltip>
+                <Tooltip text="RiotIDを変更します" position="bottom">
                   <button onClick={() => {
                       if (riotId) {
                         const [name, tag] = riotId.split('#')
@@ -601,10 +599,7 @@ export default function Home() {
                     className="px-2 py-1 sm:px-3 sm:py-2 bg-orange-800 rounded-r hover:bg-orange-700 text-sm flex items-center justify-center h-full">
                     <Pencil size={14} />
                   </button>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opggEdit:opacity-100 transition-opacity z-20 pointer-events-none">
-                    RiotIDを変更します
-                  </div>
-                </div>
+                </Tooltip>
               </div>
             ) : (
               <button onClick={() => {
@@ -618,7 +613,7 @@ export default function Home() {
             )}
             {username ? (
               <div className="flex gap-1">
-                <div className="relative group/usernameBtn">
+                <Tooltip text="あなたのプロフィールリンクをコピーします" position="bottom">
                   <button onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/user/${username}`)
                     alert('リンクをコピーしました！')
@@ -626,19 +621,13 @@ export default function Home() {
                     className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded hover:bg-gray-500 text-sm flex items-center gap-1">
                     <Link size={14} /> {username}
                   </button>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameBtn:opacity-100 transition-opacity z-20 pointer-events-none">
-                    あなたのプロフィールリンクをコピーします
-                  </div>
-                </div>
-                <div className="relative group/usernameEdit">
+                </Tooltip>
+                <Tooltip text="あなたのユーザー名を変更します" position="bottom">
                   <button onClick={() => { setNewUsername(username!); setShowUsernameModal(true) }}
                     className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-600 rounded-r hover:bg-gray-500 text-sm flex items-center justify-center h-full">
                     <Pencil size={14} />
                   </button>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/usernameEdit:opacity-100 transition-opacity z-20 pointer-events-none">
-                    あなたのユーザー名を変更します
-                  </div>
-                </div>
+                </Tooltip>
               </div>
             ) : (
               <button onClick={() => setShowUsernameModal(true)}
@@ -665,12 +654,9 @@ export default function Home() {
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-gray-400 font-bold">相手チャンプ:</span>
-            <div className="relative group/enemyHelp">
+            <Tooltip text="相手が使用するチャンピオンor相手の人が使用するかもしれないチャンピオン（ピックプール）を選択します" align="left">
               <span className="text-xs text-gray-500 bg-gray-700 rounded-full w-4 h-4 flex items-center justify-center cursor-default">?</span>
-              <div className="absolute bottom-full left-0 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/enemyHelp:opacity-100 transition-opacity z-20 pointer-events-none">
-                相手が使用するチャンピオンor相手の人が使用するかもしれないチャンピオン（ピックプール）を選択します
-              </div>
-            </div>
+            </Tooltip>
             {enemyChamps.map(name => (
               <button key={name} onClick={() => toggleBan(name)}
                 className={`flex items-center gap-1 px-2 py-1 rounded text-sm border transition-all
@@ -716,48 +702,30 @@ export default function Home() {
         {/* モード切り替え・検索・フィルター */}
         <div className="mb-4">
           <div className="flex gap-2 mb-3 items-center flex-wrap">
-            <div className="relative group/pool">
+            <Tooltip text={enemyChamps.length > 0 ? 'あなたのチャンピオン理解度を考慮した並び替えにします' : ''}>
               <button onClick={() => setViewMode('pool')}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'pool' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
                 マイピックプール
               </button>
-              {enemyChamps.length > 0 && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/pool:opacity-100 transition-opacity z-20 pointer-events-none">
-                  あなたのチャンピオン理解度を考慮した並び替えにします
-                </div>
-              )}
-            </div>
-            <div className="relative group/all">
+            </Tooltip>
+            <Tooltip text={enemyChamps.length > 0 ? '純粋なスコア計算をした並び替えにします' : ''}>
               <button onClick={() => setViewMode('all')}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'all' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
                 全チャンプ
               </button>
-              {enemyChamps.length > 0 && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/all:opacity-100 transition-opacity z-20 pointer-events-none">
-                  純粋なスコア計算をした並び替えにします
-                </div>
-              )}
-            </div>
-            <div className="relative group/mastery">
+            </Tooltip>
+            <Tooltip text={!riotId ? 'RiotIDを設定してください' : ''}>
               <button onClick={fetchMastery}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
                 マスタリー順
               </button>
-              {!riotId && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/mastery:opacity-100 transition-opacity z-20 pointer-events-none">
-                  RiotIDを設定してください
-                </div>
-              )}
-            </div>
-            <div className="relative group/counter">
+            </Tooltip>
+            <Tooltip text="あなたのピックプールに対するカウンターチャンピオンたちを並べます">
               <button onClick={() => setViewMode('counter')}
                 className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'counter' ? 'bg-teal-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
                 カウンター
               </button>
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/counter:opacity-100 transition-opacity z-20 pointer-events-none">
-                あなたのピックプールに対するカウンターチャンピオンたちを並べます
-              </div>
-            </div>
+            </Tooltip>
             <div className="ml-auto flex gap-2">
               <button onClick={() => setShowTagManager(true)}
                 className="px-3 py-2 bg-purple-700 rounded hover:bg-purple-600 text-sm font-bold">
@@ -855,27 +823,25 @@ export default function Home() {
                     )}
 
                 {viewMode === 'counter' ? (
-                  <div className="relative group/score absolute top-1 left-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setShowCounterScoreDetail(name) }}
-                      className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all">
-                      {poolCounterScore % 1 === 0 ? poolCounterScore : poolCounterScore.toFixed(1)}
-                    </button>
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/score:opacity-100 transition-opacity z-20 pointer-events-none">
-                      ピックプールへの脅威スコア詳細
-                    </div>
+                  <div className="absolute top-1 left-1">
+                    <Tooltip text="ピックプールへの脅威スコア詳細" position="bottom" zIndex="z-20">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowCounterScoreDetail(name) }}
+                        className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all">
+                        {poolCounterScore % 1 === 0 ? poolCounterScore : poolCounterScore.toFixed(1)}
+                      </button>
+                    </Tooltip>
                   </div>
                 ) : enemyChamps.length > 0 && (
-                  <div className="relative group/score absolute top-1 left-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); if (isInPool) setShowScoreDetail(name) }}
-                      className={`text-xs font-bold px-1 rounded transition-all
-                        ${!isInPool ? 'text-gray-600 cursor-default' : score > 0 ? 'text-green-400 hover:bg-gray-700' : score < 0 ? 'text-red-400 hover:bg-gray-700' : 'text-gray-400 hover:bg-gray-700'}`}>
-                      {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
-                    </button>
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/score:opacity-100 transition-opacity z-20 pointer-events-none">
-                      {isInPool ? '設定された対面に対する詳細を表示' : ''}
-                    </div>
+                  <div className="absolute top-1 left-1">
+                    <Tooltip text={isInPool ? '設定された対面に対する詳細を表示' : ''} position="bottom" zIndex="z-20">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); if (isInPool) setShowScoreDetail(name) }}
+                        className={`text-xs font-bold px-1 rounded transition-all
+                          ${!isInPool ? 'text-gray-600 cursor-default' : score > 0 ? 'text-green-400 hover:bg-gray-700' : score < 0 ? 'text-red-400 hover:bg-gray-700' : 'text-gray-400 hover:bg-gray-700'}`}>
+                        {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
+                      </button>
+                    </Tooltip>
                   </div>
                 )}
 
@@ -894,55 +860,42 @@ export default function Home() {
                   )}
                 </div>
 
-                <div className="relative group/opgg flex items-center gap-1 justify-center">
-                  <p
-                    onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
-                    className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
-                    {name}
-                  </p>
-                  {isInPool && (
-                    <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
-                      xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                      className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
-                      <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
-                    </svg>
-                  )}
-                  {isInPool && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/opgg:opacity-100 transition-opacity z-10 pointer-events-none">
-                      このチャンピオンをOP.GGで確認する
-                    </div> 
-                  )}
-                </div>
+                <Tooltip text={isInPool ? 'このチャンピオンをOP.GGで確認する' : ''} zIndex="z-10">
+                  <div className="flex items-center gap-1 justify-center">
+                    <p
+                      onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                      className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
+                      {name}
+                    </p>
+                    {isInPool && (
+                      <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                        xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                        className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
+                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                      </svg>
+                    )}
+                  </div>
+                </Tooltip>
 
                 {champLanes.length > 0 && (
-                  <div className="relative group/lane">
+                  <Tooltip text={isInPool ? 'このチャンピオンのロール・タグを編集します' : ''} zIndex="z-10">
                     <p onClick={() => isInPool ? openEdit(pickInfo!) : undefined}
                       className={`text-xs text-gray-400 transition-colors ${isInPool ? 'cursor-pointer hover:text-gray-200' : ''}`}>
                       {champLanes.join(' / ')}
                     </p>
-                    {isInPool && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/lane:opacity-100 transition-opacity z-10 pointer-events-none">
-                        このチャンピオンのロール・タグを編集します
-                      </div>
-                    )}
-                  </div>
+                  </Tooltip>
                 )}
 
-                <div className="relative group/tag">
+                <Tooltip text={isInPool ? 'このチャンピオンのロール・タグを編集します' : ''} zIndex="z-10">
                   <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openEdit(pickInfo!) }}
                     className={`text-xs px-1 rounded flex flex-wrap gap-1 justify-center max-w-full transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
                     {champTags.length > 0
                       ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{tag}</span>)
                       : <span className="text-gray-500">タグなし</span>}
                   </button>
-                  {isInPool && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/tag:opacity-100 transition-opacity z-10 pointer-events-none">
-                      このチャンピオンのロール・タグを編集します
-                    </div>
-                  )}
-                </div>
+                </Tooltip>
 
-                <div className="relative group/matchup">
+                <Tooltip text={isInPool ? 'このチャンピオンの対面を設定します' : ''} zIndex="z-10">
                   <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openMatchup(name) }}
                     className={`flex gap-1 text-xs rounded px-1 transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
                     {mu?.favorable.length > 0
@@ -952,12 +905,7 @@ export default function Home() {
                       ? <span className="text-red-400">▼{mu.unfavorable.length}</span>
                       : <span className="text-red-400 opacity-30">▼0</span>}
                   </button>
-                  {isInPool && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/matchup:opacity-100 transition-opacity z-10 pointer-events-none">
-                      このチャンピオンの対面を設定します
-                    </div>
-                  )}
-                </div>
+                </Tooltip>
                 {viewMode === 'mastery' && masteryData[name] && (
                   <p className="text-xs text-gray-500">{(masteryData[name] / 10000).toFixed(0)}万pts</p>
                 )}
@@ -965,7 +913,7 @@ export default function Home() {
                 {/* 記録・対策ビルド */}
                 <div className="flex gap-1 mt-1 flex-wrap justify-center">
                   {isInPool && viewMode !== 'counter' && (
-                    <div className="relative group/record">
+                    <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? '相手チャンプを設定してください' : '戦績を入力します'} zIndex="z-10">
                       <button
                         onClick={() => {
                           const active = enemyChamps.filter(e => !bannedChamps.has(e))
@@ -976,13 +924,10 @@ export default function Home() {
                         className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-green-700 hover:bg-green-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
                         記録
                       </button>
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/record:opacity-100 transition-opacity z-10 pointer-events-none">
-                        {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? '相手チャンプを設定してください' : '戦績を入力します'}
-                      </div>
-                    </div>
+                    </Tooltip>
                   )}
                   {isInPool && viewMode !== 'counter' && (
-                    <div className="relative group/build">
+                    <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? '相手チャンプを設定してください' : 'LolalyticsでVSページに飛ぶ'} zIndex="z-10">
                       <button
                         onClick={() => {
                           const active = enemyChamps.filter(e => !bannedChamps.has(e))
@@ -997,10 +942,7 @@ export default function Home() {
                         className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
                         対策ビルド
                       </button>
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/build:opacity-100 transition-opacity z-10 pointer-events-none">
-                        {enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? '相手チャンプを設定してください' : 'LolalyticsでVSページに飛ぶ'}
-                      </div>
-                    </div>
+                    </Tooltip>
                   )}
                 </div>
               </div>

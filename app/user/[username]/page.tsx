@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { useParams, useRouter } from 'next/navigation'
 import { getChampionIcon, championMap } from '@/lib/champions'
 import { PRIORITY_MULTIPLIERS } from '@/lib/constants'
+import { Tooltip } from '@/components/Tooltip'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
 const TAGS = ['ファイター', 'タンク', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'エンチャンター', 'メイジ', 'ダイブ', 'ピール', 'スプリット', 'スケーリング', 'アーリーゲーム']
@@ -279,15 +280,12 @@ export default function UserPage() {
             className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'mastery' ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
             マスタリー順
           </button>
-          <div className="relative group/counter">
+          <Tooltip text="このピックプールに対するカウンターチャンピオンたちを並べます">
             <button onClick={() => setViewMode('counter')}
               className={`px-4 py-2 rounded font-bold text-sm ${viewMode === 'counter' ? 'bg-teal-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
               カウンター
             </button>
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/counter:opacity-100 transition-opacity z-20 pointer-events-none">
-              このピックプールに対するカウンターチャンピオンたちを並べます
-            </div>
-          </div>
+          </Tooltip>
         </div>
         {/* フィルター */}
         <div className="mb-4">
