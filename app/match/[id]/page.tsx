@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useParams, useRouter } from 'next/navigation'
 import { getChampionIcon, championMap } from '@/lib/champions'
+import { Tooltip } from '@/components/Tooltip'
 
 type MatchSession = {
   id: string
@@ -369,27 +370,21 @@ export default function MatchDetailPage() {
             return (
               <div key={team} className={`bg-gray-800 rounded-lg p-4 border-2 ${team === 'team1' ? 'border-blue-700' : 'border-red-700'}`}>
                 <div className="flex items-center justify-between mb-2 flex-wrap gap-1">
-                  <div className="relative group/teamLabel">
+                  <Tooltip text={team === 'team1' ? 'チーム1に参加します' : 'チーム2に参加します'} align="left">
                     <span className={`font-bold cursor-pointer ${team === 'team1' ? 'text-blue-400 hover:text-blue-300' : 'text-red-400 hover:text-red-300'}`}
                       onClick={() => setMyTeam(team)}>
                       {team === 'team1' ? '🔵 チーム1' : '🔴 チーム2'}
                       {myTeam === team && <span className="text-xs ml-1 text-gray-400">（参加中）</span>}
                     </span>
-                    <div className="absolute bottom-full left-0 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/teamLabel:opacity-100 transition-opacity z-20 pointer-events-none">
-                      {team === 'team1' ? 'チーム1に参加します' : 'チーム2に参加します'}
-                    </div>
-                  </div>
+                  </Tooltip>
                   <div className="flex gap-1">
                     {multiSearchUrl && (
-                      <div className="relative group/multiSearch">
+                      <Tooltip text="このチームのOP.GGマルチサーチを作成します">
                         <button onClick={() => window.open(multiSearchUrl, '_blank')}
                           className="px-2 py-1 bg-orange-700 hover:bg-orange-600 rounded text-xs font-bold">
                           OP.GG
                         </button>
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-gray-300 text-xs rounded whitespace-nowrap opacity-0 group-hover/multiSearch:opacity-100 transition-opacity z-20 pointer-events-none">
-                          このチームのOP.GGマルチサーチを作成します
-                        </div>
-                      </div>
+                      </Tooltip>
                     )}
                     <button onClick={() => setShowUserPicker(team)}
                       className={`px-2 py-1 rounded text-xs ${team === 'team1' ? 'bg-blue-700 hover:bg-blue-600' : 'bg-red-700 hover:bg-red-600'}`}>
