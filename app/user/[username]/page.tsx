@@ -518,7 +518,7 @@ export default function UserPage() {
               <input type="text" placeholder={t('search')} value={enemySearch}
                 onChange={e => setEnemySearch(e.target.value)}
                 className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
-              <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+              <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
                 <button onClick={() => setSearchIconOnly(prev => !prev)}
                   className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
                   {searchIconOnly ? '名前▼' : '名前▲'}
