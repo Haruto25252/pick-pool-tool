@@ -61,10 +61,27 @@ export default function UserPage() {
   const [viewMode, setViewMode] = useState<'pool' | 'mastery' | 'counter'>('pool')
   const [masteryData, setMasteryData] = useState<Record<string, number>>({})
   const [targetRiotId, setTargetRiotId] = useState<string | null>(null)
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set())
+  const [allCardsCollapsed, setAllCardsCollapsed] = useState(false)
+  const [searchIconOnly, setSearchIconOnly] = useState(false)
 
   const allChampions = Object.keys(championMap)
 
   const getDisplayName = (jaName: string) => lang === 'en' ? (championMap[jaName] || jaName) : jaName
+
+  const toggleCardCollapse = (name: string) => {
+    setCollapsedCards(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
+      return next
+    })
+  }
+
+  const toggleAllCards = () => {
+    setAllCardsCollapsed(prev => !prev)
+    setCollapsedCards(new Set())
+  }
 
   const matchesSearch = (name: string, query: string) => {
     if (query === '') return true
@@ -309,7 +326,7 @@ export default function UserPage() {
           <input type="text" placeholder={t('search')}
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full p-3 mb-3 rounded bg-gray-800 text-white border border-gray-700 focus:border-yellow-400 focus:outline-none" />
-          <div className="flex gap-2 flex-wrap mb-2">
+          <div className="flex gap-2 flex-wrap mb-2 items-center">
             {LANES.map(l => (
               <Tooltip key={l} text={l === '全て' ? t('all') : l} position="bottom">
                 <button onClick={() => setLane(l)}
@@ -318,6 +335,13 @@ export default function UserPage() {
                 </button>
               </Tooltip>
             ))}
+            <div className="w-9" />
+            <Tooltip text={allCardsCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom">
+              <button onClick={toggleAllCards}
+                className="p-2 rounded font-bold bg-gray-700 hover:bg-gray-600 text-white w-9 h-9 flex items-center justify-center text-sm">
+                {allCardsCollapsed ? '＋' : '－'}
+              </button>
+            </Tooltip>
           </div>
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setSelectedTag('全て')}
@@ -334,7 +358,7 @@ export default function UserPage() {
         </div>
 
         {/* チャンピオン一覧 */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+        <div className="flex flex-wrap gap-3 items-start">
           {sorted.map(name => {
             const pickInfo = getPickInfo(name)
             const isBanned = bannedChamps.has(name)
@@ -348,10 +372,11 @@ export default function UserPage() {
                                   enemyChamps.filter(e => !bannedChamps.has(e)).some(e => matchups[name]?.unfavorable.includes(e))
             const champTags = getChampionTags(name)
             const champLanes = getChampionLanes(name)
+            const isCollapsed = allCardsCollapsed ? !collapsedCards.has(name) : collapsedCards.has(name)
 
             return (
               <div key={name}
-                className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all
+                className={`relative rounded-lg ${isCollapsed ? 'p-1 w-[72px] flex-none' : 'p-2 flex-1 min-w-[110px] max-w-[150px]'} flex flex-col items-center gap-1 border-2 transition-all
                   ${viewMode === 'counter'
                     ? isBanned ? 'opacity-40 border-red-700 bg-red-950'
                       : poolCounterScore >= 2 ? 'bg-red-950 border-red-500'
@@ -363,48 +388,74 @@ export default function UserPage() {
                     : isDisadvantage ? 'bg-red-950 border-red-800'
                     : `bg-gray-800 ${priorityBorder(pickInfo?.priority ?? 0)}`}
                 `}>
+                {/* 左上：折りたたみ＋スコア */}
+                <div className="absolute top-1 left-1 flex flex-col items-start gap-0.5 z-10">
+                  <Tooltip text={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom" zIndex="z-20">
+                    <button onClick={() => toggleCardCollapse(name)}
+                      className="text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 leading-none py-0.5 font-bold">
+                      {isCollapsed ? '＋' : '－'}
+                    </button>
+                  </Tooltip>
+                  {!isCollapsed && viewMode === 'counter' && (
+                    <button onClick={() => setShowCounterScoreDetail(name)}
+                      className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 leading-none">
+                      {poolCounterScore % 1 === 0 ? poolCounterScore : poolCounterScore.toFixed(1)}
+                    </button>
+                  )}
+                  {!isCollapsed && viewMode !== 'counter' && enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 && (
+                    <button onClick={() => setShowScoreDetail(name)}
+                      className={`text-xs font-bold px-1 rounded hover:bg-gray-700 leading-none ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                      {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
+                    </button>
+                  )}
+                </div>
                 <button onClick={() => toggleBan(name)}
                   className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
                   {isBanned ? '✕' : 'BAN'}
                 </button>
-                {viewMode === 'counter' ? (
+                <div className={`relative ${isCollapsed ? 'mt-4' : ''}`}>
+                  {iconUrl
+                    ? <img src={iconUrl} alt={name} className={`${isCollapsed ? 'w-8 h-8' : 'w-12 h-12'} rounded-full`} />
+                    : <div className={`${isCollapsed ? 'w-8 h-8' : 'w-12 h-12'} rounded-full bg-gray-700 flex items-center justify-center text-xs text-center`}>{getDisplayName(name)}</div>
+                  }
+                </div>
+                {isCollapsed && viewMode === 'counter' && (
                   <button onClick={() => setShowCounterScoreDetail(name)}
-                    className="absolute top-1 left-1 text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all">
+                    className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 leading-none">
                     {poolCounterScore % 1 === 0 ? poolCounterScore : poolCounterScore.toFixed(1)}
                   </button>
-                ) : enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 && (
+                )}
+                {isCollapsed && viewMode !== 'counter' && enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 && (
                   <button onClick={() => setShowScoreDetail(name)}
-                    className={`absolute top-1 left-1 text-xs font-bold px-1 rounded hover:bg-gray-700 transition-all ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                    className={`text-xs font-bold px-1 rounded hover:bg-gray-700 leading-none ${score > 0 ? 'text-green-400' : score < 0 ? 'text-red-400' : 'text-gray-400'}`}>
                     {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
                   </button>
                 )}
-                <div className="relative">
-                  {iconUrl
-                    ? <img src={iconUrl} alt={name} className="w-12 h-12 rounded-full" />
-                    : <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xs text-center">{getDisplayName(name)}</div>
-                  }
-                </div>
-                <p className="text-xs text-center font-bold leading-tight text-yellow-400">{getDisplayName(name)}</p>
-                {champLanes.length > 0 && <p className="text-xs text-gray-400">{champLanes.join(' / ')}</p>}
-                {champTags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 justify-center">
-                    {champTags.map(tag => (
-                      <span key={tag} className="text-xs bg-purple-900 text-purple-300 px-1 rounded">{getTagDisplayName(tag, lang)}</span>
-                    ))}
-                  </div>
-                )}
-                {mu && (
-                  <div className="flex gap-1 text-xs">
-                    {mu.favorable.length > 0 && <span className="text-green-400">▲{mu.favorable.length}</span>}
-                    {mu.unfavorable.length > 0 && <span className="text-red-400">▼{mu.unfavorable.length}</span>}
-                  </div>
-                )}
-                {viewMode === 'mastery' && masteryData[name] && (
-                  <p className="text-xs text-gray-500">
-                    {lang === 'en'
-                      ? `${(masteryData[name] / 1000).toFixed(0)}k pts`
-                      : `${(masteryData[name] / 10000).toFixed(0)}万pts`}
-                  </p>
+                {!isCollapsed && (
+                  <>
+                    <p className="text-xs text-center font-bold leading-tight text-yellow-400">{getDisplayName(name)}</p>
+                    {champLanes.length > 0 && <p className="text-xs text-gray-400">{champLanes.join(' / ')}</p>}
+                    {champTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 justify-center">
+                        {champTags.map(tag => (
+                          <span key={tag} className="text-xs bg-purple-900 text-purple-300 px-1 rounded">{getTagDisplayName(tag, lang)}</span>
+                        ))}
+                      </div>
+                    )}
+                    {mu && (
+                      <div className="flex gap-1 text-xs">
+                        {mu.favorable.length > 0 && <span className="text-green-400">▲{mu.favorable.length}</span>}
+                        {mu.unfavorable.length > 0 && <span className="text-red-400">▼{mu.unfavorable.length}</span>}
+                      </div>
+                    )}
+                    {viewMode === 'mastery' && masteryData[name] && (
+                      <p className="text-xs text-gray-500">
+                        {lang === 'en'
+                          ? `${(masteryData[name] / 1000).toFixed(0)}k pts`
+                          : `${(masteryData[name] / 10000).toFixed(0)}万pts`}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             )
@@ -463,18 +514,26 @@ export default function UserPage() {
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-gray-800 p-6 rounded-lg w-full max-w-2xl max-h-screen overflow-y-auto">
             <h2 className="text-xl font-bold mb-4 text-red-400">{t('enemy.picker.title')}</h2>
-            <input type="text" placeholder={t('search')} value={enemySearch}
-              onChange={e => setEnemySearch(e.target.value)}
-              className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
-            <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto mb-4">
+            <div className="flex gap-2 items-center mb-3">
+              <input type="text" placeholder={t('search')} value={enemySearch}
+                onChange={e => setEnemySearch(e.target.value)}
+                className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
+              <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+                <button onClick={() => setSearchIconOnly(prev => !prev)}
+                  className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                  {searchIconOnly ? '名前▼' : '名前▲'}
+                </button>
+              </Tooltip>
+            </div>
+            <div className={`${searchIconOnly ? 'grid grid-cols-8' : 'grid grid-cols-4'} gap-2 max-h-96 overflow-y-auto mb-4`}>
               {allChampions.filter(n => enemySearch === '' || matchesSearch(n, enemySearch)).map(name => {
                 const isSelected = enemyChamps.includes(name)
                 return (
                   <button key={name} onClick={() => toggleEnemy(name)}
-                    className={`text-xs p-2 rounded flex items-center gap-1 border transition-all
+                    className={`text-xs p-2 rounded ${searchIconOnly ? 'flex justify-center' : 'flex items-center gap-1'} border transition-all
                       ${isSelected ? 'border-red-400 bg-red-900' : 'border-gray-600 bg-gray-700 hover:border-red-400'}`}>
-                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                    <span className="truncate">{getDisplayName(name)}</span>
+                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className={`${searchIconOnly ? 'w-8 h-8' : 'w-6 h-6'} rounded-full`} />}
+                    {!searchIconOnly && <span className="truncate">{getDisplayName(name)}</span>}
                   </button>
                 )
               })}
