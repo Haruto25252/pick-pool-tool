@@ -85,6 +85,9 @@ export default function Home() {
   const [showTagManager, setShowTagManager] = useState(false)
   const [newTagNameJa, setNewTagNameJa] = useState('')
   const [newTagNameEn, setNewTagNameEn] = useState('')
+  const [editingTagId, setEditingTagId] = useState<string | null>(null)
+  const [editingTagNameJa, setEditingTagNameJa] = useState('')
+  const [editingTagNameEn, setEditingTagNameEn] = useState('')
   const [selectedTagForBulk, setSelectedTagForBulk] = useState<string | null>(null)
   const [bulkMode, setBulkMode] = useState<'tag' | 'lane' | null>(null)
   const [bulkTagChamps, setBulkTagChamps] = useState<string[]>([])
@@ -477,6 +480,32 @@ export default function Home() {
     for (const champ of champsWithTag) {
       await saveChampionConfig(champ.champion_name, { tags: champ.tags.filter(t => t !== tagName) })
     }
+    fetchData()
+  }
+
+  const startEditTag = (tag: UserTag) => {
+    setEditingTagId(tag.id)
+    try {
+      const parsed = JSON.parse(tag.name)
+      if (typeof parsed === 'object' && parsed !== null) {
+        setEditingTagNameJa(parsed.ja || '')
+        setEditingTagNameEn(parsed.en || '')
+        return
+      }
+    } catch {}
+    setEditingTagNameJa(tag.name)
+    setEditingTagNameEn('')
+  }
+
+  const saveEditTag = async (id: string, oldName: string) => {
+    const encoded = encodeTagName(editingTagNameJa, editingTagNameEn)
+    if (!encoded) return
+    await supabase.from('user_tags').update({ name: encoded }).eq('id', id)
+    const champsWithTag = Object.values(championConfigs).filter(c => c.tags?.includes(oldName))
+    for (const champ of champsWithTag) {
+      await saveChampionConfig(champ.champion_name, { tags: champ.tags.map(t => t === oldName ? encoded : t) })
+    }
+    setEditingTagId(null)
     fetchData()
   }
 
@@ -1357,12 +1386,36 @@ export default function Home() {
                       </div>
                     ))}
                     {userTags.map(tag => (
-                      <div key={tag.id} className="flex items-center justify-between bg-gray-700 p-3 rounded">
-                        <span className="text-purple-300 font-bold">{getTagDisplayName(tag.name, lang)}</span>
-                        <div className="flex gap-2">
-                          <button onClick={() => openBulkTag(tag.name)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">{t('tag.bulkSet')}</button>
-                          <button onClick={() => deleteTag(tag.id, tag.name)} className="px-3 py-1 bg-red-700 hover:bg-red-600 rounded text-sm">{t('tag.delete')}</button>
-                        </div>
+                      <div key={tag.id} className="bg-gray-700 p-3 rounded">
+                        {editingTagId === tag.id ? (
+                          <div className="flex flex-col gap-2">
+                            <div className="flex gap-2">
+                              <input type="text" value={editingTagNameJa}
+                                onChange={e => setEditingTagNameJa(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && saveEditTag(tag.id, tag.name)}
+                                placeholder={t('tag.new.placeholder.ja')}
+                                className="flex-1 p-1 rounded bg-gray-600 focus:outline-none border border-purple-400 text-sm" />
+                              <input type="text" value={editingTagNameEn}
+                                onChange={e => setEditingTagNameEn(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && saveEditTag(tag.id, tag.name)}
+                                placeholder={t('tag.new.placeholder.en')}
+                                className="flex-1 p-1 rounded bg-gray-600 focus:outline-none border border-purple-400 text-sm" />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <button onClick={() => setEditingTagId(null)} className="px-3 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm">{t('tag.edit.cancel')}</button>
+                              <button onClick={() => saveEditTag(tag.id, tag.name)} className="px-3 py-1 bg-purple-600 hover:bg-purple-500 rounded text-sm font-bold">{t('tag.edit.save')}</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-between">
+                            <span className="text-purple-300 font-bold">{getTagDisplayName(tag.name, lang)}</span>
+                            <div className="flex gap-2">
+                              <button onClick={() => openBulkTag(tag.name)} className="px-3 py-1 bg-blue-700 hover:bg-blue-600 rounded text-sm">{t('tag.bulkSet')}</button>
+                              <button onClick={() => startEditTag(tag)} className="px-3 py-1 bg-yellow-700 hover:bg-yellow-600 rounded text-sm">{t('tag.edit')}</button>
+                              <button onClick={() => deleteTag(tag.id, tag.name)} className="px-3 py-1 bg-red-700 hover:bg-red-600 rounded text-sm">{t('tag.delete')}</button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

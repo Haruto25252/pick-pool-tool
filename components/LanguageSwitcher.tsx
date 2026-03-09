@@ -14,7 +14,8 @@ export function LanguageSwitcher() {
         title={t('language.change')}
         className="px-2 py-1 sm:px-3 sm:py-2 bg-gray-700 rounded hover:bg-gray-600 text-sm flex items-center gap-1"
       >
-        {lang === 'ja' ? '🇯🇵' : '🇬🇧'}
+        <span>{lang === 'ja' ? '🇯🇵' : '🇬🇧'}</span>
+        <span className="font-bold">{lang === 'ja' ? 'JPN' : 'ENG'}</span>
       </button>
       {showDropdown && (
         <>
