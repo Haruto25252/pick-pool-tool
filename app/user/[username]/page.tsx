@@ -9,6 +9,7 @@ import { Tooltip } from '@/components/Tooltip'
 import { useLanguage } from '@/components/LanguageContext'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { getTagDisplayName } from '@/lib/i18n'
+import { LaneIcon } from '@/components/LaneIcon'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
 const TAGS = ['ファイター', 'タンク', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'エンチャンター', 'メイジ', 'ダイブ', 'ピール', 'スプリット', 'スケーリング', 'アーリーゲーム']
@@ -310,10 +311,12 @@ export default function UserPage() {
             className="w-full p-3 mb-3 rounded bg-gray-800 text-white border border-gray-700 focus:border-yellow-400 focus:outline-none" />
           <div className="flex gap-2 flex-wrap mb-2">
             {LANES.map(l => (
-              <button key={l} onClick={() => setLane(l)}
-                className={`px-3 py-1 rounded font-bold text-sm ${lane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                {l === '全て' ? t('all') : l}
-              </button>
+              <Tooltip key={l} text={l === '全て' ? t('all') : l} position="bottom">
+                <button onClick={() => setLane(l)}
+                  className={`p-2 rounded font-bold ${lane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                  <LaneIcon lane={l} size={20} />
+                </button>
+              </Tooltip>
             ))}
           </div>
           <div className="flex gap-2 flex-wrap">

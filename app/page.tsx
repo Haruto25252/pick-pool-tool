@@ -10,6 +10,7 @@ import { Tooltip } from '@/components/Tooltip'
 import { useLanguage } from '@/components/LanguageContext'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { getTagDisplayName, encodeTagName } from '@/lib/i18n'
+import { LaneIcon } from '@/components/LaneIcon'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
 const TAGS = ['ファイター', 'タンク', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'スケーリング']
@@ -795,10 +796,12 @@ export default function Home() {
             className="w-full p-3 mb-3 rounded bg-gray-800 text-white border border-gray-700 focus:border-yellow-400 focus:outline-none" />
           <div className="flex gap-2 flex-wrap mb-2">
             {LANES.map(l => (
-              <button key={l} onClick={() => setLane(l)}
-                className={`px-3 py-1 rounded font-bold text-sm ${lane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                {displayLane(l)}
-              </button>
+              <Tooltip key={l} text={displayLane(l)} position="bottom">
+                <button onClick={() => setLane(l)}
+                  className={`p-2 rounded font-bold ${lane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                  <LaneIcon lane={l} size={20} />
+                </button>
+              </Tooltip>
             ))}
           </div>
           <div className="flex gap-2 flex-wrap mt-2">
@@ -1091,10 +1094,12 @@ export default function Home() {
               className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
             <div className="flex gap-2 flex-wrap mb-2">
               {LANES.map(l => (
-                <button key={l} onClick={() => setEnemyLane(l)}
-                  className={`px-2 py-1 rounded text-xs font-bold ${enemyLane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                  {displayLane(l)}
-                </button>
+                <Tooltip key={l} text={displayLane(l)} position="bottom">
+                  <button onClick={() => setEnemyLane(l)}
+                    className={`p-1.5 rounded font-bold ${enemyLane === l ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                    <LaneIcon lane={l} size={18} />
+                  </button>
+                </Tooltip>
               ))}
             </div>
             <div className="flex gap-2 flex-wrap mb-3">
@@ -1154,15 +1159,17 @@ export default function Home() {
               <p className="text-sm text-gray-400 mb-1">{t('form.lane')}</p>
               <div className="flex gap-2 flex-wrap">
                 {LANES.filter(l => l !== '全て').map(l => (
-                  <button key={l} type="button"
-                    onClick={() => {
-                      const current = form.lane
-                      const next = current.includes(l) ? current.filter(x => x !== l) : [...current, l]
-                      setForm({ ...form, lane: next.length > 0 ? next : [l] })
-                    }}
-                    className={`px-3 py-1 rounded text-sm font-bold ${form.lane.includes(l) ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                    {l}
-                  </button>
+                  <Tooltip key={l} text={l} position="bottom">
+                    <button type="button"
+                      onClick={() => {
+                        const current = form.lane
+                        const next = current.includes(l) ? current.filter(x => x !== l) : [...current, l]
+                        setForm({ ...form, lane: next.length > 0 ? next : [l] })
+                      }}
+                      className={`p-2 rounded font-bold ${form.lane.includes(l) ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                      <LaneIcon lane={l} size={20} />
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
             </div>
