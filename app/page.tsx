@@ -847,15 +847,15 @@ export default function Home() {
         </div>
 
         {/* チャンピオン一覧 */}
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
           {isLoading && (
-            <div className="w-full flex flex-col items-center justify-center py-16 text-center">
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
               <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mb-4" />
               <p className="text-gray-400 text-sm">{t('loading')}</p>
             </div>
           )}
           {!isLoading && viewMode === 'pool' && sorted.length === 0 && (
-            <div className="w-full flex flex-col items-center justify-center py-16 text-center">
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
               <p className="text-gray-500 text-lg mb-2">{t('champ.emptyPool')}</p>
               <p className="text-gray-600 text-sm">
                 <button onClick={() => setViewMode('all')} className="text-yellow-400 hover:text-yellow-300 underline">{t('champ.goToAll')}</button>
@@ -882,7 +882,7 @@ export default function Home() {
             return (
                 <div key={name}
                   onClick={() => !isInPool && !isBanned && viewMode !== 'counter' ? openAdd(name) : undefined}
-                  className={`relative rounded-lg ${isCollapsed ? 'p-1 w-14 flex-none' : 'p-2 flex-1 min-w-[90px] max-w-[130px]'} flex flex-col items-center gap-1 border-2 transition-all group
+                  className={`relative rounded-lg ${isCollapsed ? 'p-1 w-14 mx-auto' : 'p-2'} flex flex-col items-center gap-1 border-2 transition-all group
                     ${!isInPool && !isBanned && viewMode !== 'counter' ? 'cursor-pointer' : ''}
                     ${viewMode === 'counter'
                       ? isBanned ? 'opacity-40 border-red-700 bg-red-950'
