@@ -118,6 +118,9 @@ export default function Home() {
   const [newRiotIdName, setNewRiotIdName] = useState('')
   const [newRiotIdTag, setNewRiotIdTag] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set())
+  const [allCardsCollapsed, setAllCardsCollapsed] = useState(false)
+  const [cardIconOnly, setCardIconOnly] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const { lang, t } = useLanguage()
@@ -139,6 +142,22 @@ export default function Home() {
 
   // Lane display: translate '全て'
   const displayLane = (l: string) => l === '全て' ? t('all') : l
+
+  // Toggle individual card collapse
+  const toggleCardCollapse = (name: string) => {
+    setCollapsedCards(prev => {
+      const next = new Set(prev)
+      if (next.has(name)) next.delete(name)
+      else next.add(name)
+      return next
+    })
+  }
+
+  // Toggle all cards collapse/expand
+  const toggleAllCards = () => {
+    setAllCardsCollapsed(prev => !prev)
+    setCollapsedCards(new Set())
+  }
 
   useEffect(() => {
     const getUser = async () => {
@@ -794,7 +813,7 @@ export default function Home() {
           <input type="text" placeholder={t('search')}
             value={search} onChange={e => setSearch(e.target.value)}
             className="w-full p-3 mb-3 rounded bg-gray-800 text-white border border-gray-700 focus:border-yellow-400 focus:outline-none" />
-          <div className="flex gap-2 flex-wrap mb-2">
+          <div className="flex gap-2 flex-wrap mb-2 items-center">
             {LANES.map(l => (
               <Tooltip key={l} text={displayLane(l)} position="bottom">
                 <button onClick={() => setLane(l)}
@@ -803,6 +822,22 @@ export default function Home() {
                 </button>
               </Tooltip>
             ))}
+            {/* レーンフィルター1個分の間隔 */}
+            <div className="w-9" />
+            <Tooltip text={allCardsCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom">
+              <button
+                onClick={toggleAllCards}
+                className="p-2 rounded font-bold bg-gray-700 hover:bg-gray-600 text-white w-9 h-9 flex items-center justify-center text-sm">
+                {allCardsCollapsed ? '＋' : '－'}
+              </button>
+            </Tooltip>
+            <Tooltip text={cardIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+              <button
+                onClick={() => setCardIconOnly(prev => !prev)}
+                className={`px-2 py-1 rounded font-bold text-xs h-9 flex items-center justify-center ${cardIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                {cardIconOnly ? '名前▼' : '名前▲'}
+              </button>
+            </Tooltip>
           </div>
           <div className="flex gap-2 flex-wrap mt-2">
             <button onClick={() => setSelectedTag('全て')}
@@ -849,11 +884,12 @@ export default function Home() {
             const champTags = getChampionTags(name)
             const champLanes = getChampionLanes(name)
             const poolCounterScore = getPoolCounterScore(name, lane)
+            const isCollapsed = allCardsCollapsed ? !collapsedCards.has(name) : collapsedCards.has(name)
 
             return (
                 <div key={name}
                   onClick={() => !isInPool && !isBanned && viewMode !== 'counter' ? openAdd(name) : undefined}
-                  className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all group
+                  className={`relative rounded-lg ${isCollapsed ? 'p-1' : 'p-2'} flex flex-col items-center gap-1 border-2 transition-all group
                     ${!isInPool && !isBanned && viewMode !== 'counter' ? 'cursor-pointer' : ''}
                     ${viewMode === 'counter'
                       ? isBanned ? 'opacity-40 border-red-700 bg-red-950'
@@ -870,7 +906,7 @@ export default function Home() {
                     }
                   `}>
                     {/* ピックプール未追加時のホバーメッセージ */}
-                    {!isInPool && !isBanned && (
+                    {!isCollapsed && !isInPool && !isBanned && (
                       <div className="absolute inset-0 flex items-end justify-center pb-1 pointer-events-none rounded-lg z-10">
                         <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity text-center px-1 bg-black bg-opacity-70 rounded">
                           {t('champ.addToPool')}
@@ -878,129 +914,159 @@ export default function Home() {
                       </div>
                     )}
 
-                {viewMode === 'counter' ? (
-                  <div className="absolute top-1 left-1">
+                {/* 左上：折りたたみボタン＋スコアボタン */}
+                <div className="absolute top-1 left-1 flex flex-col items-start gap-0.5 z-10">
+                  <Tooltip text={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom" zIndex="z-20">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleCardCollapse(name) }}
+                      className="text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 leading-none py-0.5 font-bold">
+                      {isCollapsed ? '＋' : '－'}
+                    </button>
+                  </Tooltip>
+                  {!isCollapsed && viewMode === 'counter' && (
                     <Tooltip text={t('score.threat')} position="bottom" zIndex="z-20">
                       <button
                         onClick={(e) => { e.stopPropagation(); setShowCounterScoreDetail(name) }}
-                        className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all">
+                        className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all leading-none">
                         {poolCounterScore % 1 === 0 ? poolCounterScore : poolCounterScore.toFixed(1)}
                       </button>
                     </Tooltip>
-                  </div>
-                ) : enemyChamps.length > 0 && (
-                  <div className="absolute top-1 left-1">
+                  )}
+                  {!isCollapsed && viewMode !== 'counter' && enemyChamps.length > 0 && (
                     <Tooltip text={isInPool ? t('score.detail.myPool') : ''} position="bottom" zIndex="z-20">
                       <button
                         onClick={(e) => { e.stopPropagation(); if (isInPool) setShowScoreDetail(name) }}
-                        className={`text-xs font-bold px-1 rounded transition-all
+                        className={`text-xs font-bold px-1 rounded transition-all leading-none
                           ${!isInPool ? 'text-gray-600 cursor-default' : score > 0 ? 'text-green-400 hover:bg-gray-700' : score < 0 ? 'text-red-400 hover:bg-gray-700' : 'text-gray-400 hover:bg-gray-700'}`}>
                         {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
                       </button>
                     </Tooltip>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
                   className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
                   {isBanned ? '✕' : 'BAN'}
                 </button>
 
-                <div className="relative">
+                <div className={`relative ${isCollapsed ? 'mt-4' : ''}`}>
                   {iconUrl
-                    ? <img src={iconUrl} alt={name} className="w-12 h-12 rounded-full" />
-                    : <div className="w-12 h-12 rounded-full bg-gray-700 flex items-center justify-center text-xs text-center">{name}</div>
+                    ? <img src={iconUrl} alt={name} className={`${isCollapsed ? 'w-8 h-8' : 'w-12 h-12'} rounded-full`} />
+                    : <div className={`${isCollapsed ? 'w-8 h-8' : 'w-12 h-12'} rounded-full bg-gray-700 flex items-center justify-center text-xs text-center`}>{name}</div>
                   }
                   {isDangerous(name) && (
                     <span className="absolute -top-1 -left-1 text-lg" title={t('dangerous.tooltip')}>⚠️</span>
                   )}
                 </div>
 
-                <Tooltip text={isInPool ? t('champ.viewOnOpgg') : ''} zIndex="z-10">
-                  <div className="flex items-center gap-1 justify-center">
-                    <p
-                      onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
-                      className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
-                      {getDisplayName(name)}
-                    </p>
-                    {isInPool && (
-                      <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
-                        xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                        className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
-                        <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
-                      </svg>
+                {/* 折りたたみ時：スコアをアイコン下に表示 */}
+                {isCollapsed && viewMode === 'counter' && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowCounterScoreDetail(name) }}
+                    className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 leading-none">
+                    {poolCounterScore % 1 === 0 ? poolCounterScore : poolCounterScore.toFixed(1)}
+                  </button>
+                )}
+                {isCollapsed && viewMode !== 'counter' && enemyChamps.length > 0 && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); if (isInPool) setShowScoreDetail(name) }}
+                    className={`text-xs font-bold px-1 rounded leading-none transition-all
+                      ${!isInPool ? 'text-gray-600 cursor-default' : score > 0 ? 'text-green-400 hover:bg-gray-700' : score < 0 ? 'text-red-400 hover:bg-gray-700' : 'text-gray-400 hover:bg-gray-700'}`}>
+                    {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
+                  </button>
+                )}
+
+                {!isCollapsed && (
+                  <>
+                    {!cardIconOnly && (
+                      <Tooltip text={isInPool ? t('champ.viewOnOpgg') : ''} zIndex="z-10">
+                        <div className="flex items-center gap-1 justify-center">
+                          <p
+                            onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                            className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
+                            {getDisplayName(name)}
+                          </p>
+                          {isInPool && (
+                            <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                              xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                              className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
+                              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                            </svg>
+                          )}
+                        </div>
+                      </Tooltip>
                     )}
-                  </div>
-                </Tooltip>
 
-                {champLanes.length > 0 && (
-                  <Tooltip text={isInPool ? t('champ.editRoleTag') : ''} zIndex="z-10">
-                    <p onClick={() => isInPool ? openEdit(pickInfo!) : undefined}
-                      className={`text-xs text-gray-400 transition-colors ${isInPool ? 'cursor-pointer hover:text-gray-200' : ''}`}>
-                      {champLanes.join(' / ')}
-                    </p>
-                  </Tooltip>
-                )}
+                    {champLanes.length > 0 && (
+                      <Tooltip text={isInPool ? t('champ.editRoleTag') : ''} zIndex="z-10">
+                        <p onClick={() => isInPool ? openEdit(pickInfo!) : undefined}
+                          className={`text-xs text-gray-400 transition-colors ${isInPool ? 'cursor-pointer hover:text-gray-200' : ''}`}>
+                          {champLanes.join(' / ')}
+                        </p>
+                      </Tooltip>
+                    )}
 
-                <Tooltip text={isInPool ? t('champ.editRoleTag') : ''} zIndex="z-10">
-                  <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openEdit(pickInfo!) }}
-                    className={`text-xs px-1 rounded flex flex-wrap gap-1 justify-center max-w-full transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
-                    {champTags.length > 0
-                      ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{getTagDisplayName(tag, lang)}</span>)
-                      : <span className="text-gray-500">{t('champ.tags.none')}</span>}
-                  </button>
-                </Tooltip>
-
-                <Tooltip text={isInPool ? t('champ.setMatchup') : ''} zIndex="z-10">
-                  <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openMatchup(name) }}
-                    className={`flex gap-1 text-xs rounded px-1 transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
-                    {mu?.favorable.length > 0
-                      ? <span className="text-green-400">▲{mu.favorable.length}</span>
-                      : <span className="text-green-400 opacity-30">▲0</span>}
-                    {mu?.unfavorable.length > 0
-                      ? <span className="text-red-400">▼{mu.unfavorable.length}</span>
-                      : <span className="text-red-400 opacity-30">▼0</span>}
-                  </button>
-                </Tooltip>
-                {viewMode === 'mastery' && masteryData[name] && (
-                  <p className="text-xs text-gray-500">{(masteryData[name] / 10000).toFixed(0)}{t('mastery.pts')}</p>
-                )}
-
-                {/* 記録・対策ビルド */}
-                <div className="flex gap-1 mt-1 flex-wrap justify-center">
-                  {isInPool && viewMode !== 'counter' && (
-                    <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? t('result.noEnemy') : t('result.record.tooltip')} zIndex="z-10">
-                      <button
-                        onClick={() => {
-                          const active = enemyChamps.filter(e => !bannedChamps.has(e))
-                          if (active.length === 0) return
-                          setResultForm({ myChamp: name, enemyChamp: active.length === 1 ? active[0] : '', enemySearch: '' })
-                          setShowResultForm(true)
-                        }}
-                        className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-green-700 hover:bg-green-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
-                        {t('record')}
+                    <Tooltip text={isInPool ? t('champ.editRoleTag') : ''} zIndex="z-10">
+                      <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openEdit(pickInfo!) }}
+                        className={`text-xs px-1 rounded flex flex-wrap gap-1 justify-center max-w-full transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
+                        {champTags.length > 0
+                          ? champTags.map(tag => <span key={tag} className="bg-purple-900 text-purple-300 px-1 rounded">{getTagDisplayName(tag, lang)}</span>)
+                          : <span className="text-gray-500">{t('champ.tags.none')}</span>}
                       </button>
                     </Tooltip>
-                  )}
-                  {isInPool && viewMode !== 'counter' && (
-                    <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? t('result.noEnemy') : t('counterbuild.tooltip')} zIndex="z-10">
-                      <button
-                        onClick={() => {
-                          const active = enemyChamps.filter(e => !bannedChamps.has(e))
-                          if (active.length === 0) return
-                          if (active.length === 1) {
-                            window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[active[0]]?.toLowerCase()}/build/`, '_blank')
-                          } else {
-                            setLolalyticsChamp(name)
-                            setShowLolalyticsModal(true)
-                          }
-                        }}
-                        className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
-                        {t('counterbuild')}
+
+                    <Tooltip text={isInPool ? t('champ.setMatchup') : ''} zIndex="z-10">
+                      <button onClick={(e) => { if (!isInPool) return; e.stopPropagation(); openMatchup(name) }}
+                        className={`flex gap-1 text-xs rounded px-1 transition-colors ${isInPool ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-default'}`}>
+                        {mu?.favorable.length > 0
+                          ? <span className="text-green-400">▲{mu.favorable.length}</span>
+                          : <span className="text-green-400 opacity-30">▲0</span>}
+                        {mu?.unfavorable.length > 0
+                          ? <span className="text-red-400">▼{mu.unfavorable.length}</span>
+                          : <span className="text-red-400 opacity-30">▼0</span>}
                       </button>
                     </Tooltip>
-                  )}
-                </div>
+                    {viewMode === 'mastery' && masteryData[name] && (
+                      <p className="text-xs text-gray-500">{(masteryData[name] / 10000).toFixed(0)}{t('mastery.pts')}</p>
+                    )}
+
+                    {/* 記録・対策ビルド */}
+                    <div className="flex gap-1 mt-1 flex-wrap justify-center">
+                      {isInPool && viewMode !== 'counter' && (
+                        <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? t('result.noEnemy') : t('result.record.tooltip')} zIndex="z-10">
+                          <button
+                            onClick={() => {
+                              const active = enemyChamps.filter(e => !bannedChamps.has(e))
+                              if (active.length === 0) return
+                              setResultForm({ myChamp: name, enemyChamp: active.length === 1 ? active[0] : '', enemySearch: '' })
+                              setShowResultForm(true)
+                            }}
+                            className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-green-700 hover:bg-green-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
+                            {t('record')}
+                          </button>
+                        </Tooltip>
+                      )}
+                      {isInPool && viewMode !== 'counter' && (
+                        <Tooltip text={enemyChamps.filter(e => !bannedChamps.has(e)).length === 0 ? t('result.noEnemy') : t('counterbuild.tooltip')} zIndex="z-10">
+                          <button
+                            onClick={() => {
+                              const active = enemyChamps.filter(e => !bannedChamps.has(e))
+                              if (active.length === 0) return
+                              if (active.length === 1) {
+                                window.open(`https://lolalytics.com/ja/lol/${championMap[name]?.toLowerCase()}/vs/${championMap[active[0]]?.toLowerCase()}/build/`, '_blank')
+                              } else {
+                                setLolalyticsChamp(name)
+                                setShowLolalyticsModal(true)
+                              }
+                            }}
+                            className={`text-xs px-1 rounded transition-all ${enemyChamps.filter(e => !bannedChamps.has(e)).length > 0 ? 'bg-teal-700 hover:bg-teal-600' : 'bg-gray-700 opacity-40 cursor-default'}`}>
+                            {t('counterbuild')}
+                          </button>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             )
           })}
