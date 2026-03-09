@@ -452,7 +452,7 @@ export default function MatchDetailPage() {
               {t('matchDetail.myPool')}
               {enemyChamps.length > 0 && <span className="text-sm text-gray-400 ml-2">{t('matchDetail.enemies')}{enemyChamps.map(n => getDisplayName(n)).join(', ')}）</span>}
             </h2>
-            <Tooltip text={poolIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+            <Tooltip text={poolIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
               <button onClick={() => setPoolIconOnly(prev => !prev)}
                 className={`px-2 py-1 rounded font-bold text-xs ${poolIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
                 {poolIconOnly ? '名前▼' : '名前▲'}
@@ -521,7 +521,7 @@ export default function MatchDetailPage() {
               <input type="text" placeholder={t('search')} value={champSearch}
                 onChange={e => setChampSearch(e.target.value)}
                 className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
-              <Tooltip text={champPickerIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+              <Tooltip text={champPickerIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
                 <button onClick={() => setChampPickerIconOnly(prev => !prev)}
                   className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${champPickerIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
                   {champPickerIconOnly ? '名前▼' : '名前▲'}

@@ -1158,7 +1158,7 @@ export default function Home() {
                   </button>
                 </Tooltip>
               ))}
-              <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+              <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
                 <button
                   onClick={() => setSearchIconOnly(prev => !prev)}
                   className={`px-2 py-1 rounded font-bold text-xs flex items-center justify-center ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
@@ -1515,7 +1515,7 @@ export default function Home() {
                   <input type="text" placeholder={t('search')} value={bulkSearch}
                     onChange={e => setBulkSearch(e.target.value)}
                     className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
-                  <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+                  <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
                     <button
                       onClick={() => setSearchIconOnly(prev => !prev)}
                       className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
@@ -1552,7 +1552,7 @@ export default function Home() {
                   <input type="text" placeholder={t('search')} value={bulkSearch}
                     onChange={e => setBulkSearch(e.target.value)}
                     className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
-                  <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+                  <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
                     <button
                       onClick={() => setSearchIconOnly(prev => !prev)}
                       className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
