@@ -73,6 +73,8 @@ export default function MatchDetailPage() {
   const [showBanSuggest, setShowBanSuggest] = useState(false)
   const [showLanePicker, setShowLanePicker] = useState<{team: 'team1' | 'team2', username: string} | null>(null)
   const [showScoreDetail, setShowScoreDetail] = useState<string | null>(null)
+  const [champPickerIconOnly, setChampPickerIconOnly] = useState(false)
+  const [poolIconOnly, setPoolIconOnly] = useState(false)
 
   const allChampions = Object.keys(championMap)
 
@@ -445,12 +447,20 @@ export default function MatchDetailPage() {
 
         {/* ピックプール */}
         <div className="bg-gray-800 rounded-lg p-4">
-          <h2 className="font-bold text-yellow-400 mb-3">
-            {t('matchDetail.myPool')}
-            {enemyChamps.length > 0 && <span className="text-sm text-gray-400 ml-2">{t('matchDetail.enemies')}{enemyChamps.map(n => getDisplayName(n)).join(', ')}）</span>}
-          </h2>
+          <div className="flex items-center gap-2 mb-3 flex-wrap">
+            <h2 className="font-bold text-yellow-400">
+              {t('matchDetail.myPool')}
+              {enemyChamps.length > 0 && <span className="text-sm text-gray-400 ml-2">{t('matchDetail.enemies')}{enemyChamps.map(n => getDisplayName(n)).join(', ')}）</span>}
+            </h2>
+            <Tooltip text={poolIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+              <button onClick={() => setPoolIconOnly(prev => !prev)}
+                className={`px-2 py-1 rounded font-bold text-xs ${poolIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                {poolIconOnly ? '名前▼' : '名前▲'}
+              </button>
+            </Tooltip>
+          </div>
           {sortedPool.length === 0 && <p className="text-gray-500 text-sm">{t('matchDetail.poolEmpty')}</p>}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+          <div className={`${poolIconOnly ? 'flex flex-wrap gap-1' : 'grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2'}`}>
             {sortedPool.map(name => {
               const pickInfo = getPickInfo(name)
               const isBanned = match.bans.includes(name)
@@ -462,7 +472,7 @@ export default function MatchDetailPage() {
 
               return (
                 <div key={name}
-                  className={`relative rounded-lg p-2 flex flex-col items-center gap-1 border-2 transition-all
+                  className={`relative rounded-lg ${poolIconOnly ? 'p-1' : 'p-2'} flex flex-col items-center gap-1 border-2 transition-all
                     ${isBanned || isPicked ? 'opacity-30 border-gray-600 bg-gray-800'
                       : isSkill ? 'bg-yellow-950 border-yellow-400'
                       : score > 0 ? 'bg-green-950 border-green-400'
@@ -476,16 +486,20 @@ export default function MatchDetailPage() {
                     </button>
                   )}
                   {getChampionIcon(name)
-                    ? <img src={getChampionIcon(name)} alt={name} className="w-10 h-10 rounded-full" />
-                    : <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-xs">{getDisplayName(name)}</div>
+                    ? <img src={getChampionIcon(name)} alt={name} className={`${poolIconOnly ? 'w-8 h-8' : 'w-10 h-10'} rounded-full`} />
+                    : <div className={`${poolIconOnly ? 'w-8 h-8' : 'w-10 h-10'} rounded-full bg-gray-700 flex items-center justify-center text-xs`}>{getDisplayName(name)}</div>
                   }
-                  <p className="text-xs text-center font-bold leading-tight text-yellow-400">{getDisplayName(name)}</p>
-                  {champTags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 justify-center">
-                      {champTags.slice(0, 2).map(tag => (
-                        <span key={tag} className="text-xs bg-purple-900 text-purple-300 px-1 rounded">{getTagDisplayName(tag, lang)}</span>
-                      ))}
-                    </div>
+                  {!poolIconOnly && (
+                    <>
+                      <p className="text-xs text-center font-bold leading-tight text-yellow-400">{getDisplayName(name)}</p>
+                      {champTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 justify-center">
+                          {champTags.slice(0, 2).map(tag => (
+                            <span key={tag} className="text-xs bg-purple-900 text-purple-300 px-1 rounded">{getTagDisplayName(tag, lang)}</span>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )
@@ -503,10 +517,18 @@ export default function MatchDetailPage() {
                 : showChampPicker === 'team1' ? t('matchDetail.selectTeam1')
                 : t('matchDetail.selectTeam2')}
             </h2>
-            <input type="text" placeholder={t('search')} value={champSearch}
-              onChange={e => setChampSearch(e.target.value)}
-              className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
-            <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto mb-4">
+            <div className="flex gap-2 items-center mb-3">
+              <input type="text" placeholder={t('search')} value={champSearch}
+                onChange={e => setChampSearch(e.target.value)}
+                className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
+              <Tooltip text={champPickerIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+                <button onClick={() => setChampPickerIconOnly(prev => !prev)}
+                  className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${champPickerIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                  {champPickerIconOnly ? '名前▼' : '名前▲'}
+                </button>
+              </Tooltip>
+            </div>
+            <div className={`${champPickerIconOnly ? 'grid grid-cols-8' : 'grid grid-cols-4'} gap-2 max-h-96 overflow-y-auto mb-4`}>
               {allChampions.filter(n => matchesSearch(n, champSearch)).map(name => {
                 const isAlreadyUsed = allPicked.includes(name)
                 const isSelected = showChampPicker === 'ban' ? match.bans.includes(name)
@@ -517,12 +539,12 @@ export default function MatchDetailPage() {
                     else togglePick(name, showChampPicker)
                   }}
                     disabled={isAlreadyUsed && !isSelected}
-                    className={`text-xs p-2 rounded flex items-center gap-1 border transition-all
+                    className={`text-xs p-2 rounded ${champPickerIconOnly ? 'flex justify-center' : 'flex items-center gap-1'} border transition-all
                       ${isAlreadyUsed && !isSelected ? 'opacity-20 border-gray-700 bg-gray-800 cursor-not-allowed'
                         : isSelected ? 'border-yellow-400 bg-yellow-900'
                         : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
-                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                    <span className="truncate">{getDisplayName(name)}</span>
+                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className={`${champPickerIconOnly ? 'w-8 h-8' : 'w-6 h-6'} rounded-full`} />}
+                    {!champPickerIconOnly && <span className="truncate">{getDisplayName(name)}</span>}
                   </button>
                 )
               })}
