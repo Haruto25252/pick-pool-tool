@@ -120,7 +120,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set())
   const [allCardsCollapsed, setAllCardsCollapsed] = useState(false)
-  const [cardIconOnly, setCardIconOnly] = useState(false)
+  const [searchIconOnly, setSearchIconOnly] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const { lang, t } = useLanguage()
@@ -831,13 +831,6 @@ export default function Home() {
                 {allCardsCollapsed ? '＋' : '－'}
               </button>
             </Tooltip>
-            <Tooltip text={cardIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
-              <button
-                onClick={() => setCardIconOnly(prev => !prev)}
-                className={`px-2 py-1 rounded font-bold text-xs h-9 flex items-center justify-center ${cardIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
-                {cardIconOnly ? '名前▼' : '名前▲'}
-              </button>
-            </Tooltip>
           </div>
           <div className="flex gap-2 flex-wrap mt-2">
             <button onClick={() => setSelectedTag('全て')}
@@ -854,15 +847,15 @@ export default function Home() {
         </div>
 
         {/* チャンピオン一覧 */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+        <div className="flex flex-wrap gap-2">
           {isLoading && (
-            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-full flex flex-col items-center justify-center py-16 text-center">
               <div className="w-12 h-12 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mb-4" />
               <p className="text-gray-400 text-sm">{t('loading')}</p>
             </div>
           )}
           {!isLoading && viewMode === 'pool' && sorted.length === 0 && (
-            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-full flex flex-col items-center justify-center py-16 text-center">
               <p className="text-gray-500 text-lg mb-2">{t('champ.emptyPool')}</p>
               <p className="text-gray-600 text-sm">
                 <button onClick={() => setViewMode('all')} className="text-yellow-400 hover:text-yellow-300 underline">{t('champ.goToAll')}</button>
@@ -889,7 +882,7 @@ export default function Home() {
             return (
                 <div key={name}
                   onClick={() => !isInPool && !isBanned && viewMode !== 'counter' ? openAdd(name) : undefined}
-                  className={`relative rounded-lg ${isCollapsed ? 'p-1' : 'p-2'} flex flex-col items-center gap-1 border-2 transition-all group
+                  className={`relative rounded-lg ${isCollapsed ? 'p-1 w-14 flex-none' : 'p-2 flex-1 min-w-[90px] max-w-[130px]'} flex flex-col items-center gap-1 border-2 transition-all group
                     ${!isInPool && !isBanned && viewMode !== 'counter' ? 'cursor-pointer' : ''}
                     ${viewMode === 'counter'
                       ? isBanned ? 'opacity-40 border-red-700 bg-red-950'
@@ -978,24 +971,22 @@ export default function Home() {
 
                 {!isCollapsed && (
                   <>
-                    {!cardIconOnly && (
-                      <Tooltip text={isInPool ? t('champ.viewOnOpgg') : ''} zIndex="z-10">
-                        <div className="flex items-center gap-1 justify-center">
-                          <p
-                            onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
-                            className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
-                            {getDisplayName(name)}
-                          </p>
-                          {isInPool && (
-                            <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
-                              xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                              className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
-                              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
-                            </svg>
-                          )}
-                        </div>
-                      </Tooltip>
-                    )}
+                    <Tooltip text={isInPool ? t('champ.viewOnOpgg') : ''} zIndex="z-10">
+                      <div className="flex items-center gap-1 justify-center">
+                        <p
+                          onClick={(e) => { if (!isInPool) return; e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                          className={`text-xs text-center font-bold leading-tight transition-colors ${isInPool ? 'text-yellow-400 cursor-pointer hover:text-yellow-300' : 'text-gray-300 cursor-default'}`}>
+                          {getDisplayName(name)}
+                        </p>
+                        {isInPool && (
+                          <svg onClick={(e) => { e.stopPropagation(); window.open(`https://www.op.gg/champions/${championMap[name]?.toLowerCase()}/build`, '_blank') }}
+                            xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                            className="text-gray-500 cursor-pointer hover:text-yellow-300 flex-shrink-0">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                          </svg>
+                        )}
+                      </div>
+                    </Tooltip>
 
                     {champLanes.length > 0 && (
                       <Tooltip text={isInPool ? t('champ.editRoleTag') : ''} zIndex="z-10">
@@ -1158,7 +1149,7 @@ export default function Home() {
             <input type="text" placeholder={t('search')} value={enemySearch}
               onChange={e => setEnemySearch(e.target.value)}
               className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-red-400" />
-            <div className="flex gap-2 flex-wrap mb-2">
+            <div className="flex gap-2 flex-wrap mb-2 items-center">
               {LANES.map(l => (
                 <Tooltip key={l} text={displayLane(l)} position="bottom">
                   <button onClick={() => setEnemyLane(l)}
@@ -1167,6 +1158,13 @@ export default function Home() {
                   </button>
                 </Tooltip>
               ))}
+              <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+                <button
+                  onClick={() => setSearchIconOnly(prev => !prev)}
+                  className={`px-2 py-1 rounded font-bold text-xs flex items-center justify-center ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                  {searchIconOnly ? '名前▼' : '名前▲'}
+                </button>
+              </Tooltip>
             </div>
             <div className="flex gap-2 flex-wrap mb-3">
               <button onClick={() => setEnemyTag('全て')}
@@ -1180,7 +1178,7 @@ export default function Home() {
                 </button>
               ))}
             </div>
-            <div className="grid grid-cols-4 gap-2 max-h-72 overflow-y-auto mb-4">
+            <div className={`${searchIconOnly ? 'grid grid-cols-8' : 'grid grid-cols-4'} gap-2 max-h-72 overflow-y-auto mb-4`}>
               {allChampions.filter(n => {
                 if (!matchesSearch(n, enemySearch)) return false
                 if (enemyLane !== '全て') {
@@ -1196,12 +1194,12 @@ export default function Home() {
                 const isBanned = bannedChamps.has(name)
                 return (
                   <button key={name} onClick={() => toggleEnemy(name)}
-                    className={`text-xs p-2 rounded flex items-center gap-1 border transition-all
+                    className={`text-xs ${searchIconOnly ? 'p-1 flex justify-center' : 'p-2 flex items-center gap-1'} rounded border transition-all
                       ${isBanned ? 'opacity-30 border-gray-700 bg-gray-700'
                         : isSelected ? 'border-red-400 bg-red-900'
                         : 'border-gray-600 bg-gray-700 hover:border-red-400'}`}>
-                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                    <span className="truncate">{getDisplayName(name)}</span>
+                    {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className={`${searchIconOnly ? 'w-8 h-8' : 'w-6 h-6'} rounded-full`} />}
+                    {!searchIconOnly && <span className="truncate">{getDisplayName(name)}</span>}
                   </button>
                 )
               })}
@@ -1513,22 +1511,31 @@ export default function Home() {
                   <button onClick={() => { setBulkMode(null); setSelectedTagForBulk(null) }} className="text-gray-400 hover:text-white">{t('tag.back')}</button>
                   <h3 className="text-lg font-bold text-purple-300">「{getTagDisplayName(selectedTagForBulk!, lang)}」{t('tag.setting')}</h3>
                 </div>
-                <input type="text" placeholder={t('search')} value={bulkSearch}
-                  onChange={e => setBulkSearch(e.target.value)}
-                  className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600" />
-                <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto mb-4">
+                <div className="flex gap-2 items-center mb-2">
+                  <input type="text" placeholder={t('search')} value={bulkSearch}
+                    onChange={e => setBulkSearch(e.target.value)}
+                    className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
+                  <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+                    <button
+                      onClick={() => setSearchIconOnly(prev => !prev)}
+                      className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                      {searchIconOnly ? '名前▼' : '名前▲'}
+                    </button>
+                  </Tooltip>
+                </div>
+                <div className={`${searchIconOnly ? 'grid grid-cols-8' : 'grid grid-cols-4'} gap-2 max-h-80 overflow-y-auto mb-4`}>
                   {allChampions.filter(n => matchesSearch(n, bulkSearch)).map(name => {
                     const isSelected = bulkTagChamps.includes(name)
                     const isInPool = !!getPickInfo(name)
                     return (
                       <button key={name} onClick={() => setBulkTagChamps(prev => prev.includes(name) ? prev.filter(n2 => n2 !== name) : [...prev, name])}
-                        className={`text-xs p-1 rounded flex items-center gap-1 border transition-all
+                        className={`text-xs p-1 rounded ${searchIconOnly ? 'flex justify-center' : 'flex items-center gap-1'} border transition-all
                           ${isSelected && isInPool ? 'border-purple-400 bg-purple-900'
                             : isSelected ? 'border-purple-400 bg-purple-950'
                             : isInPool ? 'border-yellow-600 bg-gray-700 hover:border-purple-400'
                             : 'border-gray-600 bg-gray-700 hover:border-purple-400'}`}>
-                        {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                        <span className="truncate">{getDisplayName(name)}</span>
+                        {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className={`${searchIconOnly ? 'w-8 h-8' : 'w-6 h-6'} rounded-full`} />}
+                        {!searchIconOnly && <span className="truncate">{getDisplayName(name)}</span>}
                       </button>
                     )
                   })}
@@ -1541,10 +1548,19 @@ export default function Home() {
                   <button onClick={() => { setBulkMode(null); setSelectedLaneForBulk(null) }} className="text-gray-400 hover:text-white">{t('tag.back')}</button>
                   <h3 className="text-lg font-bold text-yellow-300">「{selectedLaneForBulk}」{t('lane.setting')}</h3>
                 </div>
-                <input type="text" placeholder={t('search')} value={bulkSearch}
-                  onChange={e => setBulkSearch(e.target.value)}
-                  className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600" />
-                <div className="grid grid-cols-4 gap-2 max-h-80 overflow-y-auto mb-4">
+                <div className="flex gap-2 items-center mb-2">
+                  <input type="text" placeholder={t('search')} value={bulkSearch}
+                    onChange={e => setBulkSearch(e.target.value)}
+                    className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
+                  <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom">
+                    <button
+                      onClick={() => setSearchIconOnly(prev => !prev)}
+                      className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                      {searchIconOnly ? '名前▼' : '名前▲'}
+                    </button>
+                  </Tooltip>
+                </div>
+                <div className={`${searchIconOnly ? 'grid grid-cols-8' : 'grid grid-cols-4'} gap-2 max-h-80 overflow-y-auto mb-4`}>
                   {allChampions.filter(n => matchesSearch(n, bulkSearch)).map(name => {
                     const currentLanes = bulkLaneChamps[name] || []
                     const isSelected = currentLanes.includes(selectedLaneForBulk!)
@@ -1555,13 +1571,13 @@ export default function Home() {
                         const next = isSelected ? current.filter(l => l !== selectedLaneForBulk) : [...current, selectedLaneForBulk!]
                         setBulkLaneChamps(prev => ({ ...prev, [name]: next }))
                       }}
-                        className={`text-xs p-1 rounded flex items-center gap-1 border transition-all
+                        className={`text-xs p-1 rounded ${searchIconOnly ? 'flex justify-center' : 'flex items-center gap-1'} border transition-all
                           ${isSelected && isInPool ? 'border-yellow-400 bg-yellow-900'
                             : isSelected ? 'border-yellow-400 bg-yellow-950'
                             : isInPool ? 'border-blue-500 bg-gray-700 hover:border-yellow-400'
                             : 'border-gray-600 bg-gray-700 hover:border-yellow-400'}`}>
-                        {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-6 h-6 rounded-full" />}
-                        <span className="truncate">{getDisplayName(name)}</span>
+                        {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className={`${searchIconOnly ? 'w-8 h-8' : 'w-6 h-6'} rounded-full`} />}
+                        {!searchIconOnly && <span className="truncate">{getDisplayName(name)}</span>}
                       </button>
                     )
                   })}
