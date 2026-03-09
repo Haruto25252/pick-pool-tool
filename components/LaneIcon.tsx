@@ -1,9 +1,11 @@
+const CDN = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-clash/global/default/assets/images/position-selector/positions'
+
 const POSITION_ICONS: Record<string, string> = {
-  TOP: 'https://ddragon.leagueoflegends.com/cdn/img/position/Position_Challenger-Top.png',
-  JUNGLE: 'https://ddragon.leagueoflegends.com/cdn/img/position/Position_Challenger-Jungle.png',
-  MID: 'https://ddragon.leagueoflegends.com/cdn/img/position/Position_Challenger-Mid.png',
-  ADC: 'https://ddragon.leagueoflegends.com/cdn/img/position/Position_Challenger-Bottom.png',
-  SUPPORT: 'https://ddragon.leagueoflegends.com/cdn/img/position/Position_Challenger-Support.png',
+  TOP: `${CDN}/icon-position-top.png`,
+  JUNGLE: `${CDN}/icon-position-jungle.png`,
+  MID: `${CDN}/icon-position-middle.png`,
+  ADC: `${CDN}/icon-position-bottom.png`,
+  SUPPORT: `${CDN}/icon-position-utility.png`,
 }
 
 type LaneIconProps = {
