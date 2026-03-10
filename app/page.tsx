@@ -908,7 +908,7 @@ export default function Home() {
                     )}
 
                 {/* 左上：折りたたみボタン＋スコアボタン */}
-                <div className="absolute top-1 left-1 flex flex-col items-start gap-0.5 z-10">
+                <div className="absolute top-0.5 left-1 flex flex-col items-start gap-0.5 z-10">
                   <Tooltip text={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom" zIndex="z-20">
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleCardCollapse(name) }}
