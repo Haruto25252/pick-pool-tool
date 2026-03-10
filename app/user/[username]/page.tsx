@@ -389,7 +389,7 @@ export default function UserPage() {
                     : `bg-gray-800 ${priorityBorder(pickInfo?.priority ?? 0)}`}
                 `}>
                 {/* 左上：折りたたみ＋スコア */}
-                <div className="absolute top-1 left-1 flex flex-col items-start gap-0.5 z-10">
+                <div className="absolute top-0.5 left-1 flex flex-col items-start gap-0.5 z-10">
                   <Tooltip text={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom" zIndex="z-20">
                     <button onClick={() => toggleCardCollapse(name)}
                       className="text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 leading-none py-0.5 font-bold">
