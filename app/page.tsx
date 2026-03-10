@@ -907,16 +907,13 @@ export default function Home() {
                       </div>
                     )}
 
-                {/* 折りたたみボタン（BANと同じ top-1 で左右対称） */}
-                <div className="absolute top-1 left-1 z-10">
-                  <Tooltip text={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom" zIndex="z-20">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); toggleCardCollapse(name) }}
-                      className="text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 font-bold">
-                      {isCollapsed ? '＋' : '－'}
-                    </button>
-                  </Tooltip>
-                </div>
+                {/* 折りたたみボタン（BANと同じ構造・同じ高さ） */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); toggleCardCollapse(name) }}
+                  title={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'}
+                  className="absolute top-1 left-1 z-10 text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 font-bold">
+                  {isCollapsed ? '＋' : '－'}
+                </button>
 
                 {/* スコアボタン（折りたたみ時は非表示） */}
                 {!isCollapsed && viewMode === 'counter' && (

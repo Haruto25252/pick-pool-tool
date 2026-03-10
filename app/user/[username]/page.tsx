@@ -388,15 +388,13 @@ export default function UserPage() {
                     : isDisadvantage ? 'bg-red-950 border-red-800'
                     : `bg-gray-800 ${priorityBorder(pickInfo?.priority ?? 0)}`}
                 `}>
-                {/* 折りたたみボタン（BANと同じ top-1 で左右対称） */}
-                <div className="absolute top-1 left-1 z-10">
-                  <Tooltip text={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom" zIndex="z-20">
-                    <button onClick={() => toggleCardCollapse(name)}
-                      className="text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 font-bold">
-                      {isCollapsed ? '＋' : '－'}
-                    </button>
-                  </Tooltip>
-                </div>
+                {/* 折りたたみボタン（BANと同じ構造・同じ高さ） */}
+                <button
+                  onClick={() => toggleCardCollapse(name)}
+                  title={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'}
+                  className="absolute top-1 left-1 z-10 text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 font-bold">
+                  {isCollapsed ? '＋' : '－'}
+                </button>
                 {/* スコアボタン（折りたたみ時は非表示） */}
                 {!isCollapsed && viewMode === 'counter' && (
                   <div className="absolute top-6 left-1 z-10">
