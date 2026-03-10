@@ -907,35 +907,41 @@ export default function Home() {
                       </div>
                     )}
 
-                {/* 左上：折りたたみボタン＋スコアボタン */}
-                <div className="absolute top-0.5 left-1 flex flex-col items-start gap-0.5 z-10">
+                {/* 折りたたみボタン（BANと同じ top-1 で左右対称） */}
+                <div className="absolute top-1 left-1 z-10">
                   <Tooltip text={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom" zIndex="z-20">
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleCardCollapse(name) }}
-                      className="text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 leading-none py-0.5 font-bold">
+                      className="text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 font-bold">
                       {isCollapsed ? '＋' : '－'}
                     </button>
                   </Tooltip>
-                  {!isCollapsed && viewMode === 'counter' && (
+                </div>
+
+                {/* スコアボタン（折りたたみ時は非表示） */}
+                {!isCollapsed && viewMode === 'counter' && (
+                  <div className="absolute top-6 left-1 z-10">
                     <Tooltip text={t('score.threat')} position="bottom" zIndex="z-20">
                       <button
                         onClick={(e) => { e.stopPropagation(); setShowCounterScoreDetail(name) }}
-                        className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all leading-none">
+                        className="text-xs font-bold px-1 rounded text-red-400 hover:bg-gray-700 transition-all">
                         {poolCounterScore % 1 === 0 ? poolCounterScore : poolCounterScore.toFixed(1)}
                       </button>
                     </Tooltip>
-                  )}
-                  {!isCollapsed && viewMode !== 'counter' && enemyChamps.length > 0 && (
+                  </div>
+                )}
+                {!isCollapsed && viewMode !== 'counter' && enemyChamps.length > 0 && (
+                  <div className="absolute top-6 left-1 z-10">
                     <Tooltip text={isInPool ? t('score.detail.myPool') : ''} position="bottom" zIndex="z-20">
                       <button
                         onClick={(e) => { e.stopPropagation(); if (isInPool) setShowScoreDetail(name) }}
-                        className={`text-xs font-bold px-1 rounded transition-all leading-none
+                        className={`text-xs font-bold px-1 rounded transition-all
                           ${!isInPool ? 'text-gray-600 cursor-default' : score > 0 ? 'text-green-400 hover:bg-gray-700' : score < 0 ? 'text-red-400 hover:bg-gray-700' : 'text-gray-400 hover:bg-gray-700'}`}>
                         {score > 0 ? `+${score}` : score === 0 ? '±0' : score}
                       </button>
                     </Tooltip>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 <button onClick={(e) => { e.stopPropagation(); toggleBan(name) }}
                   className={`absolute top-1 right-1 text-xs px-1 rounded ${isBanned ? 'bg-red-700' : 'bg-gray-700 hover:bg-red-700'}`}>
