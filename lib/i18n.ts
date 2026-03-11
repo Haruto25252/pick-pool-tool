@@ -258,6 +258,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'matchDetail.score.current': '現在: ',
     'matchDetail.score.neutral': '± 0',
 
+    // Card collapse / icon-only
+    'card.collapse': 'チャンピオンカードを閉じる',
+    'card.expand': 'チャンピオンカードを開く',
+    'card.iconOnly': 'アイコンのみ表示',
+    'card.showName': 'アイコン＋チャンピオン名を表示',
+    'card.nameHide': '名前▼',
+    'card.nameShow': '名前▲',
+
     // User page
     'userPage.pickPool': 'のピックプール',
     'userPage.viewOnly': '閲覧モード（編集不可）',
@@ -523,6 +531,14 @@ export const translations: Record<Lang, Record<string, string>> = {
     'matchDetail.opgg.tooltip': 'Open OP.GG multi-search for this team',
     'matchDetail.score.current': 'Score: ',
     'matchDetail.score.neutral': '± 0',
+
+    // Card collapse / icon-only
+    'card.collapse': 'Collapse card',
+    'card.expand': 'Expand card',
+    'card.iconOnly': 'Icons only',
+    'card.showName': 'Show icon + name',
+    'card.nameHide': 'Name▼',
+    'card.nameShow': 'Name▲',
 
     // User page
     'userPage.pickPool': "'s Pick Pool",

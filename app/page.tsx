@@ -824,7 +824,7 @@ export default function Home() {
             ))}
             {/* レーンフィルター1個分の間隔 */}
             <div className="w-9" />
-            <Tooltip text={allCardsCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'} position="bottom">
+            <Tooltip text={allCardsCollapsed ? t('card.expand') : t('card.collapse')} position="bottom">
               <button
                 onClick={toggleAllCards}
                 className="p-2 rounded font-bold bg-gray-700 hover:bg-gray-600 text-white w-9 h-9 flex items-center justify-center text-sm">
@@ -910,7 +910,7 @@ export default function Home() {
                 {/* 折りたたみボタン（BANと同じ構造・同じ高さ） */}
                 <button
                   onClick={(e) => { e.stopPropagation(); toggleCardCollapse(name) }}
-                  title={isCollapsed ? 'チャンピオンカードを開く' : 'チャンピオンカードを閉じる'}
+                  title={isCollapsed ? t('card.expand') : t('card.collapse')}
                   className="absolute top-1 left-1 z-10 text-xs px-1 rounded bg-gray-600 hover:bg-gray-500 font-bold">
                   {isCollapsed ? '＋' : '－'}
                 </button>
@@ -1161,11 +1161,11 @@ export default function Home() {
                   </button>
                 </Tooltip>
               ))}
-              <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
+              <Tooltip text={searchIconOnly ? t('card.showName') : t('card.iconOnly')} position="bottom" align="right">
                 <button
                   onClick={() => setSearchIconOnly(prev => !prev)}
                   className={`px-2 py-1 rounded font-bold text-xs flex items-center justify-center ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
-                  {searchIconOnly ? '名前▼' : '名前▲'}
+                  {searchIconOnly ? t('card.nameHide') : t('card.nameShow')}
                 </button>
               </Tooltip>
             </div>
@@ -1518,11 +1518,11 @@ export default function Home() {
                   <input type="text" placeholder={t('search')} value={bulkSearch}
                     onChange={e => setBulkSearch(e.target.value)}
                     className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
-                  <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
+                  <Tooltip text={searchIconOnly ? t('card.showName') : t('card.iconOnly')} position="bottom" align="right">
                     <button
                       onClick={() => setSearchIconOnly(prev => !prev)}
                       className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
-                      {searchIconOnly ? '名前▼' : '名前▲'}
+                      {searchIconOnly ? t('card.nameHide') : t('card.nameShow')}
                     </button>
                   </Tooltip>
                 </div>
@@ -1555,11 +1555,11 @@ export default function Home() {
                   <input type="text" placeholder={t('search')} value={bulkSearch}
                     onChange={e => setBulkSearch(e.target.value)}
                     className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600" />
-                  <Tooltip text={searchIconOnly ? 'アイコン＋チャンピオン名を表示' : 'アイコンのみ表示'} position="bottom" align="right">
+                  <Tooltip text={searchIconOnly ? t('card.showName') : t('card.iconOnly')} position="bottom" align="right">
                     <button
                       onClick={() => setSearchIconOnly(prev => !prev)}
                       className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${searchIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
-                      {searchIconOnly ? '名前▼' : '名前▲'}
+                      {searchIconOnly ? t('card.nameHide') : t('card.nameShow')}
                     </button>
                   </Tooltip>
                 </div>
