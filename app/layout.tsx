@@ -16,7 +16,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pick Pool Tool",
-  description: "LoL Pick Pool Management Tool",
+  description: 'League of Legendsのチャンピオンピックプールを管理。マッチアップ記録・BANサジェスト・優先度設定が可能。',
+  openGraph: {
+    title: 'Pick Pool Tool',
+    description: 'LoLのピックプール管理ツール',
+    url: 'https://pick-pool-tool.vercel.app',
+    siteName: 'Pick Pool Tool',
+    locale: 'ja_JP',
+    type: 'website',
+  },
   manifest: "/manifest.json",
   icons: {
     icon: '/icon-192.png',
