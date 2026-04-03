@@ -121,6 +121,7 @@ export default function Home() {
   const [collapsedCards, setCollapsedCards] = useState<Set<string>>(new Set())
   const [allCardsCollapsed, setAllCardsCollapsed] = useState(false)
   const [searchIconOnly, setSearchIconOnly] = useState(false)
+  const [matchupIconOnly, setMatchupIconOnly] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const { lang, t } = useLanguage()
@@ -1197,7 +1198,7 @@ export default function Home() {
                 const isBanned = bannedChamps.has(name)
                 return (
                   <button key={name} onClick={() => toggleEnemy(name)}
-                    className={`text-xs ${searchIconOnly ? 'p-1 flex justify-center' : 'p-2 flex items-center gap-1'} rounded border transition-all
+                    className={`text-xs ${searchIconOnly ? 'p-1 flex items-center justify-center' : 'p-2 flex items-center gap-1'} rounded border transition-all
                       ${isBanned ? 'opacity-30 border-gray-700 bg-gray-700'
                         : isSelected ? 'border-red-400 bg-red-900'
                         : 'border-gray-600 bg-gray-700 hover:border-red-400'}`}>
@@ -1314,12 +1315,20 @@ export default function Home() {
             </div>
 
             {/* 検索 */}
-            <input type="text" placeholder={t('search')} value={favorableSearch}
-              onChange={e => setFavorableSearch(e.target.value)}
-              className="w-full p-2 mb-3 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
+            <div className="flex gap-2 mb-3">
+              <input type="text" placeholder={t('search')} value={favorableSearch}
+                onChange={e => setFavorableSearch(e.target.value)}
+                className="flex-1 p-2 rounded bg-gray-700 focus:outline-none border border-gray-600 focus:border-yellow-400" />
+              <Tooltip text={matchupIconOnly ? t('card.showName') : t('card.iconOnly')} position="bottom" align="right">
+                <button onClick={() => setMatchupIconOnly(prev => !prev)}
+                  className={`px-2 py-2 rounded font-bold text-xs whitespace-nowrap ${matchupIconOnly ? 'bg-yellow-400 text-gray-900' : 'bg-gray-700 hover:bg-gray-600 text-white'}`}>
+                  {matchupIconOnly ? t('card.nameHide') : t('card.nameShow')}
+                </button>
+              </Tooltip>
+            </div>
 
             {/* チャンピオン一覧 */}
-            <div className="grid grid-cols-4 gap-2 max-h-96 overflow-y-auto mb-4">
+            <div className={`${matchupIconOnly ? 'grid grid-cols-8' : 'grid grid-cols-4'} gap-2 max-h-96 overflow-y-auto mb-4`}>
               {allChampions.filter(n => n !== selectedChamp && matchesSearch(n, favorableSearch)).map(name => {
                 const favorable = matchupInput.favorable.split(',').map(s => s.trim()).filter(Boolean)
                 const unfavorable = matchupInput.unfavorable.split(',').map(s => s.trim()).filter(Boolean)
@@ -1336,11 +1345,13 @@ export default function Home() {
 
                 return (
                   <button key={name} onClick={() => handleMatchupChampClick(name)}
-                    className={`text-xs p-1 rounded flex flex-col items-center gap-1 border-2 transition-all ${borderColor}`}>
+                    className={`text-xs p-1 rounded flex ${matchupIconOnly ? 'items-center justify-center' : 'flex-col items-center gap-1'} border-2 transition-all ${borderColor}`}>
                     {getChampionIcon(name) && <img src={getChampionIcon(name)} alt={name} className="w-8 h-8 rounded-full" />}
-                    <span className="truncate w-full text-center leading-tight">
-                      {isSkill ? '● ' : isFavorable ? '▲ ' : isUnfavorable ? '▼ ' : ''}{getDisplayName(name)}
-                    </span>
+                    {!matchupIconOnly && (
+                      <span className="truncate w-full text-center leading-tight">
+                        {isSkill ? '● ' : isFavorable ? '▲ ' : isUnfavorable ? '▼ ' : ''}{getDisplayName(name)}
+                      </span>
+                    )}
                   </button>
                 )
               })}
@@ -1532,7 +1543,7 @@ export default function Home() {
                     const isInPool = !!getPickInfo(name)
                     return (
                       <button key={name} onClick={() => setBulkTagChamps(prev => prev.includes(name) ? prev.filter(n2 => n2 !== name) : [...prev, name])}
-                        className={`text-xs p-1 rounded ${searchIconOnly ? 'flex justify-center' : 'flex items-center gap-1'} border transition-all
+                        className={`text-xs p-1 rounded ${searchIconOnly ? 'flex items-center justify-center' : 'flex items-center gap-1'} border transition-all
                           ${isSelected && isInPool ? 'border-purple-400 bg-purple-900'
                             : isSelected ? 'border-purple-400 bg-purple-950'
                             : isInPool ? 'border-yellow-600 bg-gray-700 hover:border-purple-400'
@@ -1574,7 +1585,7 @@ export default function Home() {
                         const next = isSelected ? current.filter(l => l !== selectedLaneForBulk) : [...current, selectedLaneForBulk!]
                         setBulkLaneChamps(prev => ({ ...prev, [name]: next }))
                       }}
-                        className={`text-xs p-1 rounded ${searchIconOnly ? 'flex justify-center' : 'flex items-center gap-1'} border transition-all
+                        className={`text-xs p-1 rounded ${searchIconOnly ? 'flex items-center justify-center' : 'flex items-center gap-1'} border transition-all
                           ${isSelected && isInPool ? 'border-yellow-400 bg-yellow-900'
                             : isSelected ? 'border-yellow-400 bg-yellow-950'
                             : isInPool ? 'border-blue-500 bg-gray-700 hover:border-yellow-400'
