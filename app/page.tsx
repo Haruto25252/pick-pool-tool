@@ -131,14 +131,17 @@ export default function Home() {
   // Display champion name based on language
   const getDisplayName = (jaName: string) => lang === 'en' ? (championMap[jaName] || jaName) : jaName
 
-  // Search filter: in EN mode also search by English name
+  // Convert hiragana to katakana for unified search
+  const toKatakana = (str: string) =>
+    str.replace(/[\u3041-\u3096]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60))
+
+  // Search filter: supports katakana, hiragana, and English regardless of language mode
   const matchesSearch = (name: string, query: string) => {
     if (query === '') return true
-    if (lang === 'en') {
-      return name.toLowerCase().includes(query.toLowerCase()) ||
-        (championMap[name] || '').toLowerCase().includes(query.toLowerCase())
-    }
-    return name.includes(query)
+    const normalizedQuery = toKatakana(query)
+    return name.includes(normalizedQuery) ||
+      name.toLowerCase().includes(query.toLowerCase()) ||
+      (championMap[name] || '').toLowerCase().includes(query.toLowerCase())
   }
 
   // Lane display: translate '全て'
