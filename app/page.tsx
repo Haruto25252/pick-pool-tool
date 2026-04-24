@@ -11,6 +11,7 @@ import { useLanguage } from '@/components/LanguageContext'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { getTagDisplayName, encodeTagName } from '@/lib/i18n'
 import { LaneIcon } from '@/components/LaneIcon'
+import AdBanner from '@/components/AdBanner'
 
 const LANES = ['全て', 'TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT']
 const TAGS = ['ファイター', 'タンク', 'マジシャン', 'アサシン', 'マークスマン', 'サポート', 'エンゲージ', 'スケーリング']
@@ -643,8 +644,8 @@ export default function Home() {
   const allTags = [...TAGS, ...userTags.map(t => t.name)]
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-2 sm:p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gray-900 text-white p-2 sm:p-4 xl:flex xl:gap-4 xl:items-start">
+      <div className="max-w-6xl mx-auto xl:flex-1 xl:min-w-0 xl:max-w-none xl:mx-0">
 
         {/* ヘッダー */}
         <div className="flex justify-between items-center mb-4">
@@ -1146,6 +1147,17 @@ export default function Home() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* デスクトップサイドバー広告（xl以上で表示） */}
+      <div className="hidden xl:block w-[300px] flex-shrink-0 pt-2">
+        <div className="sticky top-4">
+          <AdBanner
+            adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR || ''}
+            adFormat="auto"
+            style={{ width: '300px', minHeight: '600px' }}
+          />
+        </div>
       </div>
 
       {/* 相手チャンプピッカー */}
