@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/components/LanguageContext'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import AdBanner from '@/components/AdBanner'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -69,6 +70,13 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 relative">
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
+      </div>
+      <div className="hidden lg:flex items-center justify-center w-[300px] mr-8 flex-shrink-0">
+        <AdBanner
+          adSlot={process.env.NEXT_PUBLIC_ADSENSE_SLOT_LOGIN || ''}
+          adFormat="auto"
+          style={{ width: '300px', minHeight: '250px' }}
+        />
       </div>
       <div className="bg-gray-800 p-8 rounded-lg w-full max-w-md">
         <h1 className="text-2xl font-bold text-yellow-400 mb-2 text-center">Pick Pool Tool</h1>

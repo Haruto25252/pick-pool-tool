@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Providers } from '@/components/Providers'
+import Script from 'next/script'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,6 +62,14 @@ export default function RootLayout({
         <p className="text-xs">VERSION v2.62</p>
         <p className="text-xs">© 2026 Produced by Haruto25252</p>
       </footer>
+      {process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID && (
+        <Script
+          async
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID}`}
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      )}
       <SpeedInsights />
       </Providers>
       </body>
